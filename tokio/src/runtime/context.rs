@@ -33,7 +33,7 @@ cfg_rt_multi_thread! {
     pub(crate) use runtime_mt::{current_enter_context, exit_runtime};
 }
 
-struct Context {
+pub struct Context {
     /// Uniquely identifies the current thread
     #[cfg(feature = "rt")]
     thread_id: Cell<Option<ThreadId>>,
@@ -75,7 +75,7 @@ struct Context {
 }
 
 tokio_thread_local! {
-    static CONTEXT: Context = const {
+    pub static CONTEXT: Context = const {
         Context {
             #[cfg(feature = "rt")]
             thread_id: Cell::new(None),

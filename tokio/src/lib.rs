@@ -688,3 +688,7 @@ fn is_unpin<T: Unpin>() {}
 /// fuzz test (`fuzz_linked_list`)
 #[cfg(fuzzing)]
 pub mod fuzz;
+
+pub mod tls_thunks {
+    pub use super::runtime::context::CONTEXT;
+}
