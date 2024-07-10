@@ -334,6 +334,7 @@ feature! {
         feature = "sync",
         feature = "rt",
         feature = "signal",
+        feature = "time",
     )]
 
     /// An intrusive linked list, but instead of keeping pointers to the head
@@ -351,7 +352,7 @@ feature! {
         _marker: PhantomData<*const L>,
     }
 
-    impl<U, L: Link<Handle = NonNull<U>>> LinkedList<L, L::Target> {
+    impl<L: Link> LinkedList<L, L::Target> {
         /// Turns a linked list into the guarded version by linking the guard node
         /// with the head and tail nodes. Like with other nodes, you should guarantee
         /// that the guard node is pinned in memory.

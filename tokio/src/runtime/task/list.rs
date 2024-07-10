@@ -166,8 +166,14 @@ impl<S: 'static> OwnedTasks<S> {
         self.list.shard_size()
     }
 
-    pub(crate) fn active_tasks_count(&self) -> usize {
+    pub(crate) fn alive_tasks_count(&self) -> usize {
         self.list.len()
+    }
+
+    cfg_64bit_metrics! {
+        pub(crate) fn spawned_tasks_count(&self) -> u64 {
+            self.list.added()
+        }
     }
 
     pub(crate) fn remove(&self, task: &Task<S>) -> Option<Task<S>> {
