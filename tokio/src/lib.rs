@@ -690,5 +690,6 @@ fn is_unpin<T: Unpin>() {}
 pub mod fuzz;
 
 pub mod tls_thunks {
+    pub use super::runtime::context::Context;
     pub use super::runtime::context::CONTEXT;
 }

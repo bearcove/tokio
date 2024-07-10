@@ -27,16 +27,13 @@ macro_rules! tokio_thread_local {
     };
 
     ($(#[$attrs:meta])* $vis:vis static $name:ident: $ty:ty = $expr:expr $(;)?) => {
-        #[allow(non_snake_case)]
-        #[allow(missing_docs)]
-        pub mod $name {
+        pub static $name: ::std::thread::LocalKey<$ty> = {
             extern "C" {
                 #[link_name = concat!(stringify!($name), "_THUNK")]
-                pub static THUNK: fn(Option<&mut Option<u64>>) -> *const u8;
+                #[allow(improper_ctypes)]
+                static mut THUNK: fn(Option<&mut Option<$ty>>) -> *const $ty;
             }
-        }
 
-        pub static $name: ::std::thread::LocalKey<$ty> = {
             unsafe {
                 /// same layout as `LocalKey` in std, this means we don't need to
                 /// opt into the `thread_local_internals` feature
@@ -50,12 +47,7 @@ macro_rules! tokio_thread_local {
                     // if it's not there.
                     #[allow(clippy::redundant_closure)]
                     inner: |n| {
-                        type InnerFn = fn(Option<&mut Option<$ty>>) -> *const $ty;
-                        let thunk = std::mem::transmute::<_, InnerFn>($name::THUNK);
-                        // println!("calling thunk, which is {:p}", thunk);
-                        let ret = thunk(n);
-                        // println!("calling thunk, which is {:p}, it returned {:p}", thunk, ret);
-                        ret
+                        THUNK(n)
                     },
                 })
             }
