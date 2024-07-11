@@ -7,7 +7,7 @@ use std::sync::atomic::Ordering::SeqCst;
 use std::time::Duration;
 
 #[derive(Debug)]
-pub(crate) struct ParkThread {
+pub struct ParkThread {
     inner: Arc<Inner>,
 }
 
@@ -29,7 +29,7 @@ const PARKED: usize = 1;
 const NOTIFIED: usize = 2;
 
 tokio_thread_local! {
-    static CURRENT_PARKER: ParkThread = ParkThread::new();
+    pub static CURRENT_PARKER: ParkThread = ParkThread::new();
 }
 
 // Bit of a hack, but it is only for loom
