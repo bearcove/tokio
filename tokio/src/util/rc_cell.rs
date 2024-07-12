@@ -10,6 +10,7 @@ pub(crate) struct RcCell<T> {
 
 impl<T> RcCell<T> {
     #[cfg(not(all(loom, test)))]
+    #[cfg_attr(feature = "import-globals", allow(unused))]
     pub(crate) const fn new() -> Self {
         Self {
             inner: UnsafeCell::new(None),

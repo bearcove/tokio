@@ -7,6 +7,7 @@ pub(super) struct Scoped<T> {
 }
 
 impl<T> Scoped<T> {
+    #[cfg_attr(feature = "import-globals", allow(unused))]
     pub(super) const fn new() -> Scoped<T> {
         Scoped {
             inner: Cell::new(ptr::null()),

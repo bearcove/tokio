@@ -64,6 +64,7 @@ impl Context {
 }
 
 impl HandleCell {
+    #[cfg_attr(feature = "import-globals", allow(unused))]
     pub(super) const fn new() -> HandleCell {
         HandleCell {
             handle: RefCell::new(None),
