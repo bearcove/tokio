@@ -33,7 +33,7 @@ cfg_rt_multi_thread! {
     pub(crate) use runtime_mt::{current_enter_context, exit_runtime};
 }
 
-pub struct Context {
+struct Context {
     /// Uniquely identifies the current thread
     #[cfg(feature = "rt")]
     thread_id: Cell<Option<ThreadId>>,

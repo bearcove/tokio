@@ -41,7 +41,8 @@ full = [
     "time",
 ]
 
-external-tls = []
+import-globals = []
+export-globals = []
 fs = []
 io-util = ["bytes"]
 # stdin, stdout, stderr

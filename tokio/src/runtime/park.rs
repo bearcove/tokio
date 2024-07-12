@@ -7,7 +7,7 @@ use std::sync::atomic::Ordering::SeqCst;
 use std::time::Duration;
 
 #[derive(Debug)]
-pub struct ParkThread {
+pub(crate) struct ParkThread {
     inner: Arc<Inner>,
 }
 
