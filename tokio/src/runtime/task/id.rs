@@ -85,16 +85,12 @@ impl Id {
             Self(NEXT_ID.fetch_add(1, Relaxed))
         }
 
-        #[cfg(all(not(all(loom, test)), not(feature = "external-tls")))]
+        #[cfg(not(all(loom, test)))]
         {
             static NEXT_ID: StaticAtomicU64 = StaticAtomicU64::new(1);
-            Self(NEXT_ID.fetch_add(1, Relaxed))
-        }
-
-        #[cfg(all(not(all(loom, test)), feature = "external-tls"))]
-        {
-            static NEXT_ID: StaticAtomicU64 = StaticAtomicU64::new(100_000);
-            Self(NEXT_ID.fetch_add(1, Relaxed))
+            let id = NEXT_ID.fetch_add(1, Relaxed);
+            println!("Generated task id {id}");
+            Self(id)
         }
     }
 
