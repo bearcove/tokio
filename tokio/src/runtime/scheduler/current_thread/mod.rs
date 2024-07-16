@@ -688,6 +688,7 @@ impl CoreGuard<'_> {
                     }
 
                     crate::soprintln!("🔄 core loop, tick {}", core.tick);
+                    core.tick();
 
                     let entry = core.next_task(handle);
 
