@@ -688,3 +688,92 @@ fn is_unpin<T: Unpin>() {}
 /// fuzz test (`fuzz_linked_list`)
 #[cfg(fuzzing)]
 pub mod fuzz;
+
+pub(crate) static SHARED_OBJECT_ID: u64 = 0;
+
+// format as hex!
+pub(crate) fn shared_object_id() -> u64 {
+    &SHARED_OBJECT_ID as *const _ as u64
+}
+
+/// Prints a message with the current shared object id.
+#[macro_export]
+macro_rules! soprintln {
+    ($($arg:tt)*) => {
+        {
+            let id = $crate::shared_object_id();
+            let r = ((id >> 43) & 0x1FFFFF) as u32 * 255 / 0x1FFFFF;
+            let g = ((id >> 22) & 0x1FFFFF) as u32 * 255 / 0x1FFFFF;
+            let b = (id & 0x3FFFFF) as u32 * 255 / 0x3FFFFF;
+            let (r, g, b) = (r as u8, g as u8, b as u8);
+
+            // Helper function to convert RGB to HSL
+            fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
+                let r = r as f32 / 255.0;
+                let g = g as f32 / 255.0;
+                let b = b as f32 / 255.0;
+
+                let max = r.max(g).max(b);
+                let min = r.min(g).min(b);
+
+                let mut h = 0.0;
+                let mut s = 0.0;
+                let l = (max + min) / 2.0;
+
+                if max != min {
+                    let d = max - min;
+                    s = if l > 0.5 {
+                        d / (2.0 - max - min)
+                    } else {
+                        d / (max + min)
+                    };
+                    h = match max {
+                        m if m == r => (g - b) / d + (if g < b { 6.0 } else { 0.0 }),
+                        m if m == g => (b - r) / d + 2.0,
+                        _ => (r - g) / d + 4.0,
+                    };
+                    h /= 6.0;
+                }
+
+                (h * 360.0, s * 100.0, l * 100.0)
+            }
+
+            // Helper function to convert HSL to RGB
+            fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
+                let h = h / 360.0;
+                let s = s / 100.0;
+                let l = l / 100.0;
+
+                let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
+                let x = c * (1.0 - ((h * 6.0) % 2.0 - 1.0).abs());
+                let m = l - c / 2.0;
+
+                let (r, g, b) = match (h * 6.0) as u8 {
+                    0 | 6 => (c, x, 0.0),
+                    1 => (x, c, 0.0),
+                    2 => (0.0, c, x),
+                    3 => (0.0, x, c),
+                    4 => (x, 0.0, c),
+                    _ => (c, 0.0, x),
+                };
+
+                (
+                    ((r + m) * 255.0) as u8,
+                    ((g + m) * 255.0) as u8,
+                    ((b + m) * 255.0) as u8,
+                )
+            }
+
+            // Ensure brightness by using the HSL color model
+            // Convert RGB to HSL, adjust lightness, then back to RGB
+            let (h, s, mut l) = rgb_to_hsl(r, g, b);
+
+            // Increase lightness to ensure brightness, but keep some variation
+            l = (l + 50.0).min(100.0);
+
+            let (r, g, b) = hsl_to_rgb(h, s, l);
+
+            eprintln!("\x1b[48;2;0;0;0m\x1b[38;2;{};{};{}m{:0x}\x1b[0m {}", r, g, b, id, format!($($arg)*));
+        }
+    };
+}

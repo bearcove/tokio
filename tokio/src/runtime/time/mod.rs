@@ -233,7 +233,7 @@ impl Driver {
         }
 
         // Process pending timers after waking up
-        println!("Calling handle.process");
+        crate::soprintln!("Calling handle.process");
         handle.process(rt_handle.clock());
     }
 
@@ -292,7 +292,7 @@ impl Handle {
         // For fairness, randomly select one to start.
         let shards = self.inner.get_shard_size();
         let start = crate::runtime::context::thread_rng_n(shards);
-        println!("Calling process_at_time, shards: {shards}, start: {start}");
+        crate::soprintln!("Calling process_at_time, shards: {shards}, start: {start}");
         self.process_at_time(start, now);
     }
 

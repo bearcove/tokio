@@ -52,7 +52,8 @@ impl<'a> EntryWaitersList<'a> {
     /// Removes the last element from the guarded list. Modifying this list
     /// requires an exclusive access to the Wheel with the specified `wheel_id`.
     pub(super) fn pop_back_locked(&mut self, _wheel: &mut Wheel) -> Option<TimerHandle> {
-        println!("EntryWaitersList::pop_back_locked, wheel = {:p}", _wheel);
+        crate::soprintln!("EntryWaitersList::pop_back_locked, wheel {:p}", _wheel);
+
         let result = self.list.pop_back();
         if result.is_none() {
             // Save information about emptiness to avoid waiting for lock

@@ -216,6 +216,7 @@ impl Handle {
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,
     {
+        crate::soprintln!("spawn_blocking");
         self.inner.blocking_spawner().spawn_blocking(self, func)
     }
 
@@ -317,6 +318,7 @@ impl Handle {
         F: Future + Send + 'static,
         F::Output: Send + 'static,
     {
+        crate::soprintln!("spawn_named {:p}, {:?}", &future, _name);
         let id = crate::runtime::task::Id::next();
         #[cfg(all(
             tokio_unstable,
