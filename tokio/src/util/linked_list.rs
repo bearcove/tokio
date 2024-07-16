@@ -117,6 +117,8 @@ impl<L, T> LinkedList<L, T> {
 impl<L: Link> LinkedList<L, L::Target> {
     /// Adds an element first in the list.
     pub(crate) fn push_front(&mut self, val: L::Handle) {
+        println!("LinkedList::push_front");
+
         // The value should not be dropped, it is being inserted into the list
         let val = ManuallyDrop::new(val);
         let ptr = L::as_raw(&val);
@@ -140,6 +142,8 @@ impl<L: Link> LinkedList<L, L::Target> {
     /// Removes the first element from a list and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_front(&mut self) -> Option<L::Handle> {
+        println!("LinkedList::pop_front");
+
         unsafe {
             let head = self.head?;
             self.head = L::pointers(head).as_ref().get_next();
@@ -160,6 +164,8 @@ impl<L: Link> LinkedList<L, L::Target> {
     /// Removes the last element from a list and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
+        println!("LinkedList::pop_back");
+
         unsafe {
             let last = self.tail?;
             self.tail = L::pointers(last).as_ref().get_prev();
@@ -401,6 +407,7 @@ feature! {
         /// Removes the last element from a list and returns it, or None if it is
         /// empty.
         pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
+            println!("EntryWaitersList::pop_back");
             unsafe {
                 let last = self.tail()?;
                 let before_last = L::pointers(last).as_ref().get_prev().unwrap();
