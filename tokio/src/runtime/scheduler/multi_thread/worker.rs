@@ -526,6 +526,7 @@ impl Context {
 
             // Increment the tick
             core.tick();
+            crate::soprintln!("worker tick {}", core.tick);
 
             // Run maintenance, if needed
             core = self.maintenance(core);
@@ -777,6 +778,7 @@ impl Core {
             let maybe_task = self.next_local_task();
 
             if maybe_task.is_some() {
+                crate::soprintln!("worker {} got local task", worker.index);
                 return maybe_task;
             }
 
@@ -808,6 +810,12 @@ impl Core {
             let mut synced = worker.handle.shared.synced.lock();
             // safety: passing in the correct `inject::Synced`.
             let mut tasks = unsafe { worker.inject().pop_n(&mut synced.inject, n) };
+
+            crate::soprintln!(
+                "after sync, worker {} got {} tasks",
+                worker.index,
+                tasks.len()
+            );
 
             // Pop the first task to return immediately
             let ret = tasks.next();

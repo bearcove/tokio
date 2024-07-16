@@ -7,6 +7,7 @@ impl Handle {
         &self,
         receiver: &mut mio::net::UnixStream,
     ) -> io::Result<()> {
+        crate::soprintln!("register_signal_receiver");
         self.registry
             .register(receiver, TOKEN_SIGNAL, mio::Interest::READABLE)?;
         Ok(())

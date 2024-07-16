@@ -176,6 +176,7 @@ cfg_coop! {
     pub(crate) fn poll_proceed(cx: &mut Context<'_>) -> Poll<RestoreOnPending> {
         context::budget(|cell| {
             let mut budget = cell.get();
+            crate::soprintln!("👋 coop::poll_proceed — budget = {:?}", budget);
 
             let decrement = budget.decrement();
 

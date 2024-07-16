@@ -1,3 +1,4 @@
+#![feature(waker_getters)]
 #![allow(unknown_lints, unexpected_cfgs)]
 #![allow(
     clippy::cognitive_complexity,
@@ -709,16 +710,16 @@ pub(crate) static GLOBAL_MODE: &str = "N";
 compile_error!("The features \"import-globals\" and \"export-globals\" are mutually exclusive");
 
 /// Represents a color generated from a u64 value.
-pub struct AddrColor {
+pub struct AddrColor<'a> {
     fg: (u8, u8, u8),
     bg: (u8, u8, u8),
-    extra: &'static str,
+    extra: &'a str,
     val: u64,
     hash: u16,
 }
 
-impl AddrColor {
-    pub fn new(extra: &'static str, u: u64) -> Self {
+impl<'a> AddrColor<'a> {
+    pub fn new(extra: &'a str, u: u64) -> Self {
         fn hash(mut x: u64) -> u64 {
             const K: u64 = 0x517cc1b727220a95;
             x = x.wrapping_mul(K);
@@ -773,11 +774,11 @@ impl AddrColor {
     }
 }
 
-impl std::fmt::Display for AddrColor {
+impl<'a> std::fmt::Display for AddrColor<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "\x1b[48;2;{};{};{}m\x1b[38;2;{};{};{}m{}#{:016x}\x1b[0m",
+            "\x1b[48;2;{};{};{}m\x1b[38;2;{};{};{}m{}#{:0x}\x1b[0m",
             self.bg.0, self.bg.1, self.bg.2, self.fg.0, self.fg.1, self.fg.2, self.extra, self.val
         )
     }
@@ -790,7 +791,20 @@ macro_rules! soprintln {
         {
             let id = $crate::shared_object_id();
             let color = $crate::AddrColor::new($crate::GLOBAL_MODE, id);
-            eprintln!("{} {}", color, format!($($arg)*));
+            let curr_thread = std::thread::current();
+            let tid = format!("{:?}", curr_thread.id());
+            // strip `ThreadId(` prefix
+            let tid = tid.strip_prefix("ThreadId(").unwrap_or(&tid);
+            // strip `)` suffix
+            let tid = tid.strip_suffix(")").unwrap_or(&tid);
+            // parse tid as u64
+            let tid = tid.parse::<u64>().unwrap_or(0);
+            let thread_name = curr_thread.name().unwrap_or("<unnamed>");
+            let thread = $crate::AddrColor::new(thread_name, tid);
+
+            let timestamp = ::std::time::SystemTime::now().duration_since(::std::time::UNIX_EPOCH).unwrap().as_millis() % 99999;
+            let msg = format!($($arg)*);
+            eprintln!("{timestamp:05} {color} {thread} {msg}");
         }
     };
 }

@@ -354,11 +354,15 @@ impl Handle {
 
                         // SAFETY: We hold the driver lock, and just removed the entry from any linked lists.
                         if let Some(waker) = unsafe { entry.fire(Ok(())) } {
+                            crate::soprintln!(
+                                "🔥 Pushing {}",
+                                crate::AddrColor::new("waker", waker.as_raw().data() as u64)
+                            );
                             waker_list.push(waker);
 
                             if !waker_list.can_push() {
                                 crate::soprintln!(
-                                    "Waker list is full, waking all {} wakers",
+                                    "waker list is full, waking all {} wakers",
                                     waker_list.len()
                                 );
 
@@ -427,6 +431,10 @@ impl Handle {
         new_tick: u64,
         entry: NonNull<TimerShared>,
     ) {
+        crate::soprintln!(
+            "reregistering {}",
+            crate::AddrColor::new("TimerEntry", entry.as_ptr() as *const _ as u64)
+        );
         let waker = unsafe {
             let mut lock = self.inner.lock_sharded_wheel(entry.as_ref().shard_id());
 

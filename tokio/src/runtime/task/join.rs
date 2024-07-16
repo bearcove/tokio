@@ -154,7 +154,7 @@ cfg_rt! {
     /// [`std::thread::JoinHandle`]: std::thread::JoinHandle
     /// [`JoinError`]: crate::task::JoinError
     pub struct JoinHandle<T> {
-        raw: RawTask,
+        pub(crate) raw: RawTask,
         _p: PhantomData<T>,
     }
 }
@@ -256,8 +256,11 @@ impl<T> JoinHandle<T> {
     /// Set the waker that is notified when the task completes.
     pub(crate) fn set_join_waker(&mut self, waker: &Waker) {
         if self.raw.try_set_join_waker(waker) {
+            crate::soprintln!("👋 JoinHandle::set_join_waker — the task has already completed");
             // In this case the task has already completed. We wake the waker immediately.
             waker.wake_by_ref();
+        } else {
+            crate::soprintln!("👋 JoinHandle::set_join_waker — successful");
         }
     }
 
@@ -324,6 +327,8 @@ impl<T> Future for JoinHandle<T> {
     type Output = super::Result<T>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
+        crate::soprintln!("👋 JoinHandle::poll");
+
         ready!(crate::trace::trace_leaf(cx));
         let mut ret = Poll::Pending;
 
@@ -345,6 +350,8 @@ impl<T> Future for JoinHandle<T> {
             self.raw
                 .try_read_output(&mut ret as *mut _ as *mut (), cx.waker());
         }
+
+        crate::soprintln!("👋 JoinHandle::poll — is_ready? {}", ret.is_ready());
 
         if ret.is_ready() {
             coop.made_progress();

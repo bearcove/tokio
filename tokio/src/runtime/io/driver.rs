@@ -92,6 +92,8 @@ impl Driver {
     /// Creates a new event loop, returning any error that happened during the
     /// creation.
     pub(crate) fn new(nevents: usize) -> io::Result<(Driver, Handle)> {
+        crate::soprintln!("Driver::new");
+
         let poll = mio::Poll::new()?;
         #[cfg(not(target_os = "wasi"))]
         let waker = mio::Waker::new(poll.registry(), TOKEN_WAKEUP)?;
@@ -164,9 +166,12 @@ impl Driver {
 
             if token == TOKEN_WAKEUP {
                 // Nothing to do, the event is used to unblock the I/O driver
+                crate::soprintln!("Got TOKEN_WAKEUP");
             } else if token == TOKEN_SIGNAL {
+                crate::soprintln!("Got TOKEN_SIGNAL");
                 self.signal_ready = true;
             } else {
+                crate::soprintln!("Got token {}", token.0);
                 let ready = Ready::from_mio(event);
                 // Use std::ptr::from_exposed_addr when stable
                 let ptr: *const ScheduledIo = token.0 as *const _;

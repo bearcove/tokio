@@ -117,16 +117,20 @@ impl<L, T> LinkedList<L, T> {
 impl<L: Link> LinkedList<L, L::Target> {
     /// Adds an element first in the list.
     pub(crate) fn push_front(&mut self, val: L::Handle) {
-        crate::soprintln!("LinkedList::push_front(self = {:p})", self);
-
         // The value should not be dropped, it is being inserted into the list
         let val = ManuallyDrop::new(val);
         let ptr = L::as_raw(&val);
         crate::soprintln!(
-            "🔗 {} => {} => {}",
-            crate::AddrColor::new("head", self.head.map(|n| n.as_ptr() as u64).unwrap_or(0)),
+            "push_front: {} => {} => {}",
             crate::AddrColor::new("new", ptr.as_ptr() as u64),
-            crate::AddrColor::new("tail", self.tail.map(|n| n.as_ptr() as u64).unwrap_or(0))
+            crate::AddrColor::new("head", self.head.map(|n| n.as_ptr() as u64).unwrap_or(0)),
+            crate::AddrColor::new(
+                "head.next",
+                self.head
+                    .and_then(|h| unsafe { L::pointers(h).as_ref().get_next() })
+                    .map(|n| n.as_ptr() as u64)
+                    .unwrap_or(0)
+            )
         );
         assert_ne!(self.head, Some(ptr));
         unsafe {
@@ -148,7 +152,18 @@ impl<L: Link> LinkedList<L, L::Target> {
     /// Removes the first element from a list and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_front(&mut self) -> Option<L::Handle> {
-        crate::soprintln!("LinkedList::pop_front(self = {:p})", self);
+        crate::soprintln!(
+            "pop_front: {} => {}",
+            crate::AddrColor::new("head", self.head.map(|n| n.as_ptr() as u64).unwrap_or(0)),
+            crate::AddrColor::new(
+                "head.next",
+                self.head
+                    .and_then(|h| unsafe { L::pointers(h).as_ref().get_next() })
+                    .map(|n| n.as_ptr() as u64)
+                    .unwrap_or(0)
+            )
+        );
+
         unsafe {
             let head = self.head?;
             self.head = L::pointers(head).as_ref().get_next();
@@ -169,7 +184,18 @@ impl<L: Link> LinkedList<L, L::Target> {
     /// Removes the last element from a list and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
-        crate::soprintln!("LinkedList::pop_back(self = {:p})", self);
+        crate::soprintln!(
+            "pop_back: {} => {}",
+            crate::AddrColor::new("tail", self.tail.map(|n| n.as_ptr() as u64).unwrap_or(0)),
+            crate::AddrColor::new(
+                "tail.prev",
+                self.tail
+                    .and_then(|h| unsafe { L::pointers(h).as_ref().get_prev() })
+                    .map(|n| n.as_ptr() as u64)
+                    .unwrap_or(0)
+            )
+        );
+
         unsafe {
             let last = self.tail?;
             self.tail = L::pointers(last).as_ref().get_prev();
@@ -208,7 +234,21 @@ impl<L: Link> LinkedList<L, L::Target> {
     ///   the caller has an exclusive access to that list. This condition is
     ///   used by the linked list in `sync::Notify`.
     pub(crate) unsafe fn remove(&mut self, node: NonNull<L::Target>) -> Option<L::Handle> {
-        crate::soprintln!("LinkedList::remove(self = {:p})", self);
+        crate::soprintln!(
+            "remove: {} => {} => {} (head: {}, tail: {})",
+            crate::AddrColor::new("self", self as *const _ as u64),
+            crate::AddrColor::new("prev", node.as_ptr() as u64),
+            crate::AddrColor::new("next", unsafe {
+                L::pointers(node)
+                    .as_ref()
+                    .get_next()
+                    .map(|n| n.as_ptr() as u64)
+                    .unwrap_or(0)
+            }),
+            crate::AddrColor::new("head", self.head.map(|h| h.as_ptr() as u64).unwrap_or(0)),
+            crate::AddrColor::new("tail", self.tail.map(|t| t.as_ptr() as u64).unwrap_or(0))
+        );
+
         if let Some(prev) = L::pointers(node).as_ref().get_prev() {
             debug_assert_eq!(L::pointers(prev).as_ref().get_next(), Some(node));
             L::pointers(prev)
@@ -413,16 +453,11 @@ feature! {
         /// empty.
         pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
             unsafe {
-                crate::soprintln!("🍾  {} => {} => {}",
-                    crate::AddrColor::new("prev", L::pointers(self.guard).as_ref().get_prev().map(|n| n.as_ptr() as u64).unwrap_or(0)),
-                    crate::AddrColor::new("head", self.guard.as_ptr() as u64),
-                    crate::AddrColor::new("next", L::pointers(self.guard).as_ref().get_next().map(|n| n.as_ptr() as u64).unwrap_or(0)),
+                crate::soprintln!("guarded_pop_back {} {}",
+                    crate::AddrColor::new("guard", self.guard.as_ptr() as u64),
+                    crate::AddrColor::new("tail", L::pointers(self.guard).as_ref().get_prev().map(|n| n.as_ptr() as u64).unwrap_or(0)),
                 );
                 let last = self.tail()?;
-                crate::soprintln!("🍾  {} => {} => {}",
-                    crate::AddrColor::new("prev", L::pointers(last).as_ref().get_prev().map(|n| n.as_ptr() as u64).unwrap_or(0)),
-                    crate::AddrColor::new("tail", last.as_ptr() as u64),
-                    crate::AddrColor::new("next", L::pointers(last).as_ref().get_next().map(|n| n.as_ptr() as u64).unwrap_or(0)));
                 let before_last = L::pointers(last).as_ref().get_prev().unwrap();
 
                 L::pointers(self.guard).as_mut().set_prev(Some(before_last));

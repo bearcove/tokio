@@ -166,7 +166,7 @@ cfg_rt! {
         F: Future + Send + 'static,
         F::Output: Send + 'static,
     {
-        crate::soprintln!("> Spawning {:p}", &future);
+        crate::soprintln!("> Spawning fut {:p}", &future);
         // preventing stack overflows on debug mode, by quickly sending the
         // task to the heap.
         let ret = if cfg!(debug_assertions) && std::mem::size_of::<F>() > 2048 {
@@ -174,7 +174,8 @@ cfg_rt! {
         } else {
             spawn_inner(future, None)
         };
-        crate::soprintln!("< Spawned {:p}", &ret);
+        let header_ptr = ret.raw.header_ptr();
+        crate::soprintln!("< Spawned {}", crate::AddrColor::new("task", header_ptr.as_ptr() as u64));
         ret
     }
 

@@ -172,7 +172,7 @@ impl RawTask {
         RawTask { ptr }
     }
 
-    pub(super) fn header_ptr(&self) -> NonNull<Header> {
+    pub(crate) fn header_ptr(&self) -> NonNull<Header> {
         self.ptr
     }
 
@@ -181,7 +181,7 @@ impl RawTask {
     }
 
     /// Returns a reference to the task's header.
-    pub(super) fn header(&self) -> &Header {
+    pub(crate) fn header(&self) -> &Header {
         unsafe { self.ptr.as_ref() }
     }
 
