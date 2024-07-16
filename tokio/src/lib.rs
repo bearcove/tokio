@@ -708,64 +708,89 @@ pub(crate) static GLOBAL_MODE: &str = "N";
 #[cfg(all(feature = "import-globals", feature = "export-globals"))]
 compile_error!("The features \"import-globals\" and \"export-globals\" are mutually exclusive");
 
+/// Represents a color generated from a u64 value.
+pub struct AddrColor {
+    fg: (u8, u8, u8),
+    bg: (u8, u8, u8),
+    extra: &'static str,
+    val: u64,
+    hash: u16,
+}
+
+impl AddrColor {
+    pub fn new(extra: &'static str, u: u64) -> Self {
+        fn hash(mut x: u64) -> u64 {
+            const K: u64 = 0x517cc1b727220a95;
+            x = x.wrapping_mul(K);
+            x ^= x >> 32;
+            x = x.wrapping_mul(K);
+            x ^= x >> 32;
+            x = x.wrapping_mul(K);
+            x
+        }
+
+        let hashed_float = (hash(u) as f64) / (u64::MAX as f64);
+        let h = hashed_float * 360.0;
+        let s = 50.0;
+        let l = 70.0;
+
+        fn hsl_to_rgb(h: f64, s: f64, l: f64) -> (u8, u8, u8) {
+            let h = h / 360.0;
+            let s = s / 100.0;
+            let l = l / 100.0;
+
+            let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
+            let x = c * (1.0 - ((h * 6.0) % 2.0 - 1.0).abs());
+            let m = l - c / 2.0;
+
+            let (r, g, b) = match (h * 6.0) as u8 {
+                0 | 6 => (c, x, 0.0),
+                1 => (x, c, 0.0),
+                2 => (0.0, c, x),
+                3 => (0.0, x, c),
+                4 => (x, 0.0, c),
+                _ => (c, 0.0, x),
+            };
+
+            (
+                ((r + m) * 255.0) as u8,
+                ((g + m) * 255.0) as u8,
+                ((b + m) * 255.0) as u8,
+            )
+        }
+
+        let fg = hsl_to_rgb(h, s, l);
+        let bg = hsl_to_rgb(h, s * 0.8, l * 0.5);
+        let hash = (hash(u) & 0xFFFF) as u16;
+
+        Self {
+            fg,
+            bg,
+            extra,
+            hash,
+            val: u,
+        }
+    }
+}
+
+impl std::fmt::Display for AddrColor {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "\x1b[48;2;{};{};{}m\x1b[38;2;{};{};{}m{}#{:016x}\x1b[0m",
+            self.bg.0, self.bg.1, self.bg.2, self.fg.0, self.fg.1, self.fg.2, self.extra, self.val
+        )
+    }
+}
+
 /// Prints a message with the current shared object id.
 #[macro_export]
 macro_rules! soprintln {
     ($($arg:tt)*) => {
         {
             let id = $crate::shared_object_id();
-
-            // Better hash function (FxHash)
-            fn hash(mut x: u64) -> u64 {
-                const K: u64 = 0x517cc1b727220a95;
-                x = x.wrapping_mul(K);
-                x ^= x >> 32;
-                x = x.wrapping_mul(K);
-                x ^= x >> 32;
-                x = x.wrapping_mul(K);
-                x
-            }
-
-            // Convert hash to a float between 0 and 1
-            let hashed_float = (hash(id) as f64) / (u64::MAX as f64);
-
-            // Use hashed float as hue (0-360)
-            let h = hashed_float * 360.0;
-            let s = 50.0; // Average saturation
-            let l = 70.0; // Brightness 0.7 out of 1
-
-            // Helper function to convert HSL to RGB
-            fn hsl_to_rgb(h: f64, s: f64, l: f64) -> (u8, u8, u8) {
-                let h = h / 360.0;
-                let s = s / 100.0;
-                let l = l / 100.0;
-
-                let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
-                let x = c * (1.0 - ((h * 6.0) % 2.0 - 1.0).abs());
-                let m = l - c / 2.0;
-
-                let (r, g, b) = match (h * 6.0) as u8 {
-                    0 | 6 => (c, x, 0.0),
-                    1 => (x, c, 0.0),
-                    2 => (0.0, c, x),
-                    3 => (0.0, x, c),
-                    4 => (x, 0.0, c),
-                    _ => (c, 0.0, x),
-                };
-
-                (
-                    ((r + m) * 255.0) as u8,
-                    ((g + m) * 255.0) as u8,
-                    ((b + m) * 255.0) as u8,
-                )
-            }
-
-            let (r, g, b) = hsl_to_rgb(h, s, l);
-
-            let (bg_r, bg_g, bg_b) = hsl_to_rgb(h, s * 0.8, l * 0.5);
-
-            let truncated_hash = hash(id) & 0xFFFF;
-            eprintln!("\x1b[48;2;{};{};{}m\x1b[38;2;{};{};{}m{}#{:04x}\x1b[0m {}", bg_r, bg_g, bg_b, r, g, b, $crate::GLOBAL_MODE, truncated_hash, format!($($arg)*));
+            let color = $crate::AddrColor::new($crate::GLOBAL_MODE, id);
+            eprintln!("{} {}", color, format!($($arg)*));
         }
     };
 }

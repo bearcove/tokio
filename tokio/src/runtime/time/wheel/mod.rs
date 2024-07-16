@@ -189,6 +189,7 @@ impl Wheel {
     /// Safety: This entry must not have expired.
     pub(super) unsafe fn reinsert_entry(&mut self, entry: TimerHandle, elapsed: u64, when: u64) {
         let level = level_for(elapsed, when);
+        crate::soprintln!("🔄 reinserting entry at level {level}");
         unsafe { self.levels[level].add_entry(entry) };
     }
 

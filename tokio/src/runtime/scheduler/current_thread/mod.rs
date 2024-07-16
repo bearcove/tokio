@@ -293,18 +293,10 @@ impl Core {
 
     fn next_task(&mut self, handle: &Handle) -> Option<Notified> {
         if self.tick % self.global_queue_interval == 0 {
-            crate::soprintln!(
-                "Core::next_task: getting a remote task (tick = {})",
-                self.tick
-            );
             handle
                 .next_remote_task()
                 .or_else(|| self.next_local_task(handle))
         } else {
-            crate::soprintln!(
-                "Core::next_task: getting a local task (tick = {})",
-                self.tick
-            );
             self.next_local_task(handle)
                 .or_else(|| handle.next_remote_task())
         }
@@ -687,6 +679,7 @@ impl CoreGuard<'_> {
                         return (core, None);
                     }
 
+                    core.tick();
                     crate::soprintln!("🔄 core loop, tick {}", core.tick);
                     core.tick();
 
@@ -695,7 +688,7 @@ impl CoreGuard<'_> {
                     let task = match entry {
                         Some(entry) => entry,
                         None => {
-                            crate::soprintln!("🗑️  ran out of tasks to poll");
+                            // crate::soprintln!("🗑️  ran out of tasks to poll");
                             core.metrics.end_processing_scheduled_tasks();
 
                             core = if !context.defer.is_empty() {
@@ -707,7 +700,7 @@ impl CoreGuard<'_> {
                             core.metrics.start_processing_scheduled_tasks();
 
                             // Try polling the `block_on` future next
-                            crate::soprintln!("🔙 continuing core loop (after park)");
+                            // crate::soprintln!("🔙 continuing core loop (after park)");
                             continue 'outer;
                         }
                     };

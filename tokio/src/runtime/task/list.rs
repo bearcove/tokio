@@ -34,7 +34,7 @@ cfg_has_atomic_u64! {
         loop {
             let id = NEXT_OWNED_TASKS_ID.fetch_add(1, Ordering::Relaxed);
             if let Some(id) = NonZeroU64::new(id) {
-                crate::soprintln!("Generated owned 64b task id: {id}");
+                crate::soprintln!("➕ Generated owned 64b task id: {id}");
                 return id;
             }
         }
@@ -50,7 +50,7 @@ cfg_not_has_atomic_u64! {
         loop {
             let id = NEXT_OWNED_TASKS_ID.fetch_add(1, Ordering::Relaxed);
             if let Some(id) = NonZeroU64::new(u64::from(id)) {
-                crate::soprintln!("Generated owned 32b task id: {id}");
+                crate::soprintln!("➕ Generated owned 32b task id: {id}");
                 return id;
             }
         }

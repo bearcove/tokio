@@ -120,6 +120,7 @@ impl Level {
 
     pub(crate) unsafe fn add_entry(&mut self, item: TimerHandle) {
         let slot = slot_for(item.true_when(), self.level);
+        crate::soprintln!("  ...adding entry at level {}, slot {slot}", self.level);
 
         self.slot[slot].push_front(item);
 

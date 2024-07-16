@@ -89,7 +89,7 @@ impl Id {
         {
             static NEXT_ID: StaticAtomicU64 = StaticAtomicU64::new(1);
             let id = NEXT_ID.fetch_add(1, Relaxed);
-            crate::soprintln!("Generated task id {id}");
+            crate::soprintln!("➕ Generated task id {id}");
             Self(id)
         }
     }

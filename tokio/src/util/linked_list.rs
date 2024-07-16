@@ -122,6 +122,12 @@ impl<L: Link> LinkedList<L, L::Target> {
         // The value should not be dropped, it is being inserted into the list
         let val = ManuallyDrop::new(val);
         let ptr = L::as_raw(&val);
+        crate::soprintln!(
+            "🔗 {} => {} => {}",
+            crate::AddrColor::new("head", self.head.map(|n| n.as_ptr() as u64).unwrap_or(0)),
+            crate::AddrColor::new("new", ptr.as_ptr() as u64),
+            crate::AddrColor::new("tail", self.tail.map(|n| n.as_ptr() as u64).unwrap_or(0))
+        );
         assert_ne!(self.head, Some(ptr));
         unsafe {
             L::pointers(ptr).as_mut().set_next(self.head);
@@ -406,9 +412,17 @@ feature! {
         /// Removes the last element from a list and returns it, or None if it is
         /// empty.
         pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
-            crate::soprintln!("GuardedLinkedList::pop_back(self = {:p})", self.guard);
             unsafe {
+                crate::soprintln!("🍾  {} => {} => {}",
+                    crate::AddrColor::new("prev", L::pointers(self.guard).as_ref().get_prev().map(|n| n.as_ptr() as u64).unwrap_or(0)),
+                    crate::AddrColor::new("head", self.guard.as_ptr() as u64),
+                    crate::AddrColor::new("next", L::pointers(self.guard).as_ref().get_next().map(|n| n.as_ptr() as u64).unwrap_or(0)),
+                );
                 let last = self.tail()?;
+                crate::soprintln!("🍾  {} => {} => {}",
+                    crate::AddrColor::new("prev", L::pointers(last).as_ref().get_prev().map(|n| n.as_ptr() as u64).unwrap_or(0)),
+                    crate::AddrColor::new("tail", last.as_ptr() as u64),
+                    crate::AddrColor::new("next", L::pointers(last).as_ref().get_next().map(|n| n.as_ptr() as u64).unwrap_or(0)));
                 let before_last = L::pointers(last).as_ref().get_prev().unwrap();
 
                 L::pointers(self.guard).as_mut().set_prev(Some(before_last));
