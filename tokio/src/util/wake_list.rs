@@ -68,7 +68,10 @@ impl WakeList {
             // SAFETY: The resulting pointer is in bounds or one after the length of the same object.
             guard.start = unsafe { guard.start.add(1) };
             // If this panics, then `guard` will clean up the remaining wakers.
-            crate::soprintln!("🔥 waking waker, data ptr = {:p}", waker.as_raw().data());
+            crate::soprintln!(
+                "🔥 waking {}",
+                crate::AddrColor::new("waker", waker.as_raw().data() as u64)
+            );
             waker.wake();
         }
     }

@@ -295,6 +295,8 @@ impl Handle {
     /// Runs timer related logic, and returns the next wakeup time
     pub(self) fn process(&self, clock: &Clock) {
         let now = self.time_source().now(clock);
+        crate::soprintln!("current tick: {}", now);
+
         // For fairness, randomly select one to start.
         let shards = self.inner.get_shard_size();
         let start = crate::runtime::context::thread_rng_n(shards);
@@ -389,7 +391,7 @@ impl Handle {
         drop(lock);
 
         if waker_list.len() > 0 {
-            crate::soprintln!("👋 Waking {} wakers", waker_list.len());
+            crate::soprintln!("👋 waking {} wakers", waker_list.len());
         }
         waker_list.wake_all();
 
@@ -451,6 +453,7 @@ impl Handle {
                 unsafe { entry.fire(Err(crate::time::error::Error::shutdown())) }
             } else {
                 entry.set_expiration(new_tick);
+                crate::soprintln!("setting expiration to {}", new_tick);
 
                 // Note: We don't have to worry about racing with some other resetting
                 // thread, because add_entry and reregister require exclusive control of

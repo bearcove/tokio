@@ -458,12 +458,6 @@ impl TimerEntry {
         if inner.is_none() {
             let shard_size = self.driver.driver().time().inner.get_shard_size();
             let shard_id = generate_shard_id(shard_size);
-            crate::soprintln!(
-                "[Shard #{}] Initializing timer entry {}, shard size = {}",
-                shard_id,
-                crate::AddrColor::new("self", &self as *const _ as u64),
-                shard_size,
-            );
             unsafe {
                 *self.inner.get() = Some(TimerShared::new(shard_id));
             }
