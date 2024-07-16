@@ -218,22 +218,28 @@ impl Driver {
                         duration = std::cmp::min(limit, duration);
                     }
 
+                    crate::soprintln!("😴 Parking for {duration:?}");
                     self.park_thread_timeout(rt_handle, duration);
                 } else {
+                    crate::soprintln!("😴 Parking for for zero seconds (negative duration)");
                     self.park.park_timeout(rt_handle, Duration::from_secs(0));
                 }
             }
             None => {
                 if let Some(duration) = limit {
+                    crate::soprintln!(
+                        "😴 Parking for {duration:?} (limit, since no expiration_time)"
+                    );
                     self.park_thread_timeout(rt_handle, duration);
                 } else {
+                    crate::soprintln!("😴 Parking indefinitely (no expiration_time, no limit)");
                     self.park.park(rt_handle);
                 }
             }
         }
 
         // Process pending timers after waking up
-        crate::soprintln!("Calling handle.process");
+        crate::soprintln!("⏰ Thread unparked!");
         handle.process(rt_handle.clock());
     }
 
@@ -292,7 +298,6 @@ impl Handle {
         // For fairness, randomly select one to start.
         let shards = self.inner.get_shard_size();
         let start = crate::runtime::context::thread_rng_n(shards);
-        crate::soprintln!("Calling process_at_time, shards: {shards}, start: {start}");
         self.process_at_time(start, now);
     }
 
@@ -308,6 +313,7 @@ impl Handle {
 
     // Returns the next wakeup time of this shard.
     pub(self) fn process_at_sharded_time(&self, id: u32, mut now: u64) -> Option<u64> {
+        crate::soprintln!("[Shard #{id}] Processing");
         let mut waker_list = WakeList::new();
         let mut lock = self.inner.lock_sharded_wheel(id);
 
@@ -344,11 +350,18 @@ impl Handle {
                 match unsafe { entry.mark_firing(deadline) } {
                     Ok(()) => {
                         // Entry was expired.
+                        crate::soprintln!("💣 A timer was marked as firing");
+
                         // SAFETY: We hold the driver lock, and just removed the entry from any linked lists.
                         if let Some(waker) = unsafe { entry.fire(Ok(())) } {
                             waker_list.push(waker);
 
                             if !waker_list.can_push() {
+                                crate::soprintln!(
+                                    "Waker list is full, waking all {} wakers",
+                                    waker_list.len()
+                                );
+
                                 // Wake a batch of wakers. To avoid deadlock,
                                 // we must do this with the lock temporarily dropped.
                                 drop(lock);
@@ -371,6 +384,9 @@ impl Handle {
         let next_wake_up = lock.poll_at();
         drop(lock);
 
+        if waker_list.len() > 0 {
+            crate::soprintln!("Waking {} wakers", waker_list.len());
+        }
         waker_list.wake_all();
         next_wake_up
     }

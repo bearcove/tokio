@@ -293,10 +293,18 @@ impl Core {
 
     fn next_task(&mut self, handle: &Handle) -> Option<Notified> {
         if self.tick % self.global_queue_interval == 0 {
+            crate::soprintln!(
+                "Core::next_task: getting a remote task (tick = {})",
+                self.tick
+            );
             handle
                 .next_remote_task()
                 .or_else(|| self.next_local_task(handle))
         } else {
+            crate::soprintln!(
+                "Core::next_task: getting a local task (tick = {})",
+                self.tick
+            );
             self.next_local_task(handle)
                 .or_else(|| handle.next_remote_task())
         }
@@ -651,6 +659,7 @@ impl CoreGuard<'_> {
     #[track_caller]
     fn block_on<F: Future>(self, future: F) -> F::Output {
         let ret = self.enter(|mut core, context| {
+            crate::soprintln!("CoreGuard::block_on");
             let waker = Handle::waker_ref(&context.handle);
             let mut cx = std::task::Context::from_waker(&waker);
 
@@ -660,7 +669,6 @@ impl CoreGuard<'_> {
 
             'outer: loop {
                 let handle = &context.handle;
-
                 if handle.reset_woken() {
                     let (c, res) = context.enter(core, || {
                         crate::runtime::coop::budget(|| future.as_mut().poll(&mut cx))
@@ -679,13 +687,14 @@ impl CoreGuard<'_> {
                         return (core, None);
                     }
 
-                    core.tick();
+                    crate::soprintln!("🔄 core loop, tick {}", core.tick);
 
                     let entry = core.next_task(handle);
 
                     let task = match entry {
                         Some(entry) => entry,
                         None => {
+                            crate::soprintln!("🗑️  ran out of tasks to poll");
                             core.metrics.end_processing_scheduled_tasks();
 
                             core = if !context.defer.is_empty() {
@@ -697,6 +706,7 @@ impl CoreGuard<'_> {
                             core.metrics.start_processing_scheduled_tasks();
 
                             // Try polling the `block_on` future next
+                            crate::soprintln!("🔙 continuing core loop (after park)");
                             continue 'outer;
                         }
                     };
@@ -704,7 +714,10 @@ impl CoreGuard<'_> {
                     let task = context.handle.shared.owned.assert_owner(task);
 
                     let (c, ()) = context.run_task(core, || {
+                        let ptr = task.task.header_ptr();
+                        crate::soprintln!("🏃 running task {:p}", ptr);
                         task.run();
+                        crate::soprintln!("🏃 running task {:p} (done!)", ptr);
                     });
 
                     core = c;
@@ -714,9 +727,12 @@ impl CoreGuard<'_> {
 
                 // Yield to the driver, this drives the timer and pulls any
                 // pending I/O events.
+                crate::soprintln!("✋ core yielding to driver");
                 core = context.park_yield(core, handle);
 
                 core.metrics.start_processing_scheduled_tasks();
+
+                crate::soprintln!("🔙 core loop continuing naturally");
             }
         });
 

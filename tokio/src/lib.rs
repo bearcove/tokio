@@ -696,6 +696,18 @@ pub(crate) fn shared_object_id() -> u64 {
     &SHARED_OBJECT_ID as *const _ as u64
 }
 
+#[cfg(feature = "import-globals")]
+pub(crate) static GLOBAL_MODE: &str = "I";
+
+#[cfg(feature = "export-globals")]
+pub(crate) static GLOBAL_MODE: &str = "E";
+
+#[cfg(not(any(feature = "import-globals", feature = "export-globals")))]
+pub(crate) static GLOBAL_MODE: &str = "N";
+
+#[cfg(all(feature = "import-globals", feature = "export-globals"))]
+compile_error!("The features \"import-globals\" and \"export-globals\" are mutually exclusive");
+
 /// Prints a message with the current shared object id.
 #[macro_export]
 macro_rules! soprintln {
@@ -750,7 +762,10 @@ macro_rules! soprintln {
 
             let (r, g, b) = hsl_to_rgb(h, s, l);
 
-            eprintln!("\x1b[48;2;0;0;0m\x1b[38;2;{};{};{}m{:0x}\x1b[0m {}", r, g, b, id, format!($($arg)*));
+            let (bg_r, bg_g, bg_b) = hsl_to_rgb(h, s * 0.8, l * 0.5);
+
+            let truncated_hash = hash(id) & 0xFFFF;
+            eprintln!("\x1b[48;2;{};{};{}m\x1b[38;2;{};{};{}m{}#{:04x}\x1b[0m {}", bg_r, bg_g, bg_b, r, g, b, $crate::GLOBAL_MODE, truncated_hash, format!($($arg)*));
         }
     };
 }

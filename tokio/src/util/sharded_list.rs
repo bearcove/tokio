@@ -55,7 +55,7 @@ pub(crate) struct ShardGuard<'a, L, T> {
     lock: MutexGuard<'a, LinkedList<L, T>>,
     added: &'a MetricAtomicU64,
     count: &'a MetricAtomicUsize,
-    id: usize,
+    pub(crate) id: usize,
 }
 
 impl<L: ShardedListItem> ShardedList<L, L::Target> {

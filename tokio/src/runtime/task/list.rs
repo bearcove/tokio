@@ -79,6 +79,11 @@ struct OwnedTasksInner<S: 'static> {
 impl<S: 'static> OwnedTasks<S> {
     pub(crate) fn new(num_cores: usize) -> Self {
         let shard_size = Self::gen_shared_list_size(num_cores);
+        crate::soprintln!(
+            "OwnedTasks::new num_cores={} shard_size={}",
+            num_cores,
+            shard_size
+        );
         Self {
             list: List::new(shard_size),
             closed: AtomicBool::new(false),
@@ -116,6 +121,8 @@ impl<S: 'static> OwnedTasks<S> {
         }
 
         let shard = self.list.lock_shard(&task);
+        crate::soprintln!("Pushing task to shard {}", shard.id);
+
         // Check the closed flag in the lock for ensuring all that tasks
         // will shut down after the OwnedTasks has been closed.
         if self.closed.load(Ordering::Acquire) {

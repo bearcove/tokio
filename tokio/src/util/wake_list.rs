@@ -71,6 +71,10 @@ impl WakeList {
             waker.wake();
         }
     }
+
+    pub(crate) fn len(&self) -> usize {
+        self.curr
+    }
 }
 
 impl Drop for WakeList {

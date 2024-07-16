@@ -117,6 +117,8 @@ impl<L, T> LinkedList<L, T> {
 impl<L: Link> LinkedList<L, L::Target> {
     /// Adds an element first in the list.
     pub(crate) fn push_front(&mut self, val: L::Handle) {
+        crate::soprintln!("LinkedList::push_front(self = {:p})", self);
+
         // The value should not be dropped, it is being inserted into the list
         let val = ManuallyDrop::new(val);
         let ptr = L::as_raw(&val);
@@ -140,6 +142,7 @@ impl<L: Link> LinkedList<L, L::Target> {
     /// Removes the first element from a list and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_front(&mut self) -> Option<L::Handle> {
+        crate::soprintln!("LinkedList::pop_front(self = {:p})", self);
         unsafe {
             let head = self.head?;
             self.head = L::pointers(head).as_ref().get_next();
@@ -160,6 +163,7 @@ impl<L: Link> LinkedList<L, L::Target> {
     /// Removes the last element from a list and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
+        crate::soprintln!("LinkedList::pop_back(self = {:p})", self);
         unsafe {
             let last = self.tail?;
             self.tail = L::pointers(last).as_ref().get_prev();
@@ -198,6 +202,7 @@ impl<L: Link> LinkedList<L, L::Target> {
     ///   the caller has an exclusive access to that list. This condition is
     ///   used by the linked list in `sync::Notify`.
     pub(crate) unsafe fn remove(&mut self, node: NonNull<L::Target>) -> Option<L::Handle> {
+        crate::soprintln!("LinkedList::remove(self = {:p})", self);
         if let Some(prev) = L::pointers(node).as_ref().get_prev() {
             debug_assert_eq!(L::pointers(prev).as_ref().get_next(), Some(node));
             L::pointers(prev)
@@ -401,6 +406,7 @@ feature! {
         /// Removes the last element from a list and returns it, or None if it is
         /// empty.
         pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
+            crate::soprintln!("GuardedLinkedList::pop_back(self = {:p})", self.guard);
             unsafe {
                 let last = self.tail()?;
                 let before_last = L::pointers(last).as_ref().get_prev().unwrap();

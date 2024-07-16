@@ -237,7 +237,7 @@ unsafe impl<S: Schedule> Sync for Notified<S> {}
 /// where it is safe to poll it.
 #[repr(transparent)]
 pub(crate) struct LocalNotified<S: 'static> {
-    task: Task<S>,
+    pub(crate) task: Task<S>,
     _not_send: PhantomData<*const ()>,
 }
 
@@ -355,11 +355,11 @@ impl<S: 'static> Task<S> {
         self.raw
     }
 
-    fn header(&self) -> &Header {
+    pub(crate) fn header(&self) -> &Header {
         self.raw.header()
     }
 
-    fn header_ptr(&self) -> NonNull<Header> {
+    pub(crate) fn header_ptr(&self) -> NonNull<Header> {
         self.raw.header_ptr()
     }
 

@@ -459,10 +459,10 @@ impl TimerEntry {
             let shard_size = self.driver.driver().time().inner.get_shard_size();
             let shard_id = generate_shard_id(shard_size);
             crate::soprintln!(
-                "Initializing timer entry {:p}, shard size = {}, shard id = {}",
+                "[Shard #{}] Initializing timer entry {:p}, shard size = {}",
+                shard_id,
                 &self,
                 shard_size,
-                shard_id
             );
             unsafe {
                 *self.inner.get() = Some(TimerShared::new(shard_id));
