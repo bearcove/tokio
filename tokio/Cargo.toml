@@ -51,6 +51,7 @@ export-globals = [
     "rubicon/export-globals",
     "parking_lot/export-globals",
 ]
+soprintln = ["rubicon/soprintln"]
 fs = []
 io-util = ["bytes"]
 # stdin, stdout, stderr
