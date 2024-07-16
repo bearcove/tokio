@@ -49,6 +49,7 @@ impl Handle {
         T: Future + Send + 'static,
         T::Output: Send + 'static,
     {
+        rubicon::soprintln!("bind_new_task (task {id})");
         let (handle, notified) = me.shared.owned.bind(future, me.clone(), id);
 
         me.schedule_option_task_without_yield(notified);

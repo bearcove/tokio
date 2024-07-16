@@ -62,6 +62,8 @@ impl<L: ShardedListItem> ShardedList<L, L::Target> {
     /// Removes the last element from a list specified by `shard_id` and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_back(&self, shard_id: usize) -> Option<L::Handle> {
+        rubicon::soprintln!("pop_back from shard {}", shard_id);
+
         let mut lock = self.shard_inner(shard_id);
         let node = lock.pop_back();
         if node.is_some() {
@@ -80,6 +82,12 @@ impl<L: ShardedListItem> ShardedList<L, L::Target> {
     /// - `node` is currently contained by some other `GuardedLinkedList`.
     pub(crate) unsafe fn remove(&self, node: NonNull<L::Target>) -> Option<L::Handle> {
         let id = L::get_shard_id(node);
+        rubicon::soprintln!(
+            "remove {} from shard {}",
+            rubicon::Beacon::from_ptr("node", node.as_ptr()),
+            id
+        );
+
         let mut lock = self.shard_inner(id);
         // SAFETY: Since the shard id cannot change, it's not possible for this node
         // to be in any other list of the same sharded list.
@@ -123,6 +131,10 @@ impl<L: ShardedListItem> ShardedList<L, L::Target> {
     /// Used to help us to decide the parameter `shard_id` of the `pop_back` method.
     pub(crate) fn shard_size(&self) -> usize {
         self.shard_mask + 1
+    }
+
+    pub(crate) fn shard_mask(&self) -> usize {
+        self.shard_mask
     }
 
     #[inline]

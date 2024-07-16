@@ -92,7 +92,7 @@ impl Driver {
     /// Creates a new event loop, returning any error that happened during the
     /// creation.
     pub(crate) fn new(nevents: usize) -> io::Result<(Driver, Handle)> {
-        crate::soprintln!("Driver::new");
+        rubicon::soprintln!("Driver::new");
 
         let poll = mio::Poll::new()?;
         #[cfg(not(target_os = "wasi"))]
@@ -140,6 +140,7 @@ impl Driver {
     }
 
     fn turn(&mut self, handle: &Handle, max_wait: Option<Duration>) {
+        rubicon::soprintln!("🛞 Driver::turn (max_wait = {:?})", max_wait);
         debug_assert!(!handle.registrations.is_shutdown(&handle.synced.lock()));
 
         handle.release_pending_registrations();
@@ -166,12 +167,12 @@ impl Driver {
 
             if token == TOKEN_WAKEUP {
                 // Nothing to do, the event is used to unblock the I/O driver
-                crate::soprintln!("Got TOKEN_WAKEUP");
+                rubicon::soprintln!("Got TOKEN_WAKEUP");
             } else if token == TOKEN_SIGNAL {
-                crate::soprintln!("Got TOKEN_SIGNAL");
+                rubicon::soprintln!("Got TOKEN_SIGNAL");
                 self.signal_ready = true;
             } else {
-                crate::soprintln!("Got token {}", token.0);
+                rubicon::soprintln!("Got token {}", token.0);
                 let ready = Ready::from_mio(event);
                 // Use std::ptr::from_exposed_addr when stable
                 let ptr: *const ScheduledIo = token.0 as *const _;
@@ -210,6 +211,7 @@ impl Handle {
     /// blocked in `turn`, then the next call to `turn` will not block and
     /// return immediately.
     pub(crate) fn unpark(&self) {
+        rubicon::soprintln!("✨ Driver::unpark");
         #[cfg(not(target_os = "wasi"))]
         self.waker.wake().expect("failed to wake I/O driver");
     }

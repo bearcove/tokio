@@ -120,16 +120,21 @@ impl<L: Link> LinkedList<L, L::Target> {
         // The value should not be dropped, it is being inserted into the list
         let val = ManuallyDrop::new(val);
         let ptr = L::as_raw(&val);
-        crate::soprintln!(
+        rubicon::soprintln!(
             "push_front: {} => {} => {}",
-            crate::AddrColor::new("new", ptr.as_ptr() as u64),
-            crate::AddrColor::new("head", self.head.map(|n| n.as_ptr() as u64).unwrap_or(0)),
-            crate::AddrColor::new(
+            rubicon::Beacon::from_ptr("new", ptr.as_ptr()),
+            rubicon::Beacon::from_ptr(
+                "head",
+                self.head
+                    .map(|n| n.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
+            ),
+            rubicon::Beacon::from_ptr(
                 "head.next",
                 self.head
                     .and_then(|h| unsafe { L::pointers(h).as_ref().get_next() })
-                    .map(|n| n.as_ptr() as u64)
-                    .unwrap_or(0)
+                    .map(|n| n.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
             )
         );
         assert_ne!(self.head, Some(ptr));
@@ -152,15 +157,20 @@ impl<L: Link> LinkedList<L, L::Target> {
     /// Removes the first element from a list and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_front(&mut self) -> Option<L::Handle> {
-        crate::soprintln!(
+        rubicon::soprintln!(
             "pop_front: {} => {}",
-            crate::AddrColor::new("head", self.head.map(|n| n.as_ptr() as u64).unwrap_or(0)),
-            crate::AddrColor::new(
+            rubicon::Beacon::from_ptr(
+                "head",
+                self.head
+                    .map(|n| n.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
+            ),
+            rubicon::Beacon::from_ptr(
                 "head.next",
                 self.head
                     .and_then(|h| unsafe { L::pointers(h).as_ref().get_next() })
-                    .map(|n| n.as_ptr() as u64)
-                    .unwrap_or(0)
+                    .map(|n| n.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
             )
         );
 
@@ -184,15 +194,20 @@ impl<L: Link> LinkedList<L, L::Target> {
     /// Removes the last element from a list and returns it, or None if it is
     /// empty.
     pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
-        crate::soprintln!(
+        rubicon::soprintln!(
             "pop_back: {} => {}",
-            crate::AddrColor::new("tail", self.tail.map(|n| n.as_ptr() as u64).unwrap_or(0)),
-            crate::AddrColor::new(
+            rubicon::Beacon::from_ptr(
+                "tail",
+                self.tail
+                    .map(|n| n.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
+            ),
+            rubicon::Beacon::from_ptr(
                 "tail.prev",
                 self.tail
                     .and_then(|h| unsafe { L::pointers(h).as_ref().get_prev() })
-                    .map(|n| n.as_ptr() as u64)
-                    .unwrap_or(0)
+                    .map(|n| n.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
             )
         );
 
@@ -234,19 +249,35 @@ impl<L: Link> LinkedList<L, L::Target> {
     ///   the caller has an exclusive access to that list. This condition is
     ///   used by the linked list in `sync::Notify`.
     pub(crate) unsafe fn remove(&mut self, node: NonNull<L::Target>) -> Option<L::Handle> {
-        crate::soprintln!(
+        rubicon::soprintln!(
             "remove: {} => {} => {} (head: {}, tail: {})",
-            crate::AddrColor::new("self", self as *const _ as u64),
-            crate::AddrColor::new("prev", node.as_ptr() as u64),
-            crate::AddrColor::new("next", unsafe {
+            rubicon::Beacon::from_ptr("node.prev", unsafe {
+                L::pointers(node)
+                    .as_ref()
+                    .get_prev()
+                    .map(|n| n.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
+            }),
+            rubicon::Beacon::from_ptr("node", node.as_ptr()),
+            rubicon::Beacon::from_ptr("node.next", unsafe {
                 L::pointers(node)
                     .as_ref()
                     .get_next()
-                    .map(|n| n.as_ptr() as u64)
-                    .unwrap_or(0)
+                    .map(|n| n.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
             }),
-            crate::AddrColor::new("head", self.head.map(|h| h.as_ptr() as u64).unwrap_or(0)),
-            crate::AddrColor::new("tail", self.tail.map(|t| t.as_ptr() as u64).unwrap_or(0))
+            rubicon::Beacon::from_ptr(
+                "head",
+                self.head
+                    .map(|h| h.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
+            ),
+            rubicon::Beacon::from_ptr(
+                "tail",
+                self.tail
+                    .map(|t| t.as_ptr())
+                    .unwrap_or_else(std::ptr::null_mut)
+            )
         );
 
         if let Some(prev) = L::pointers(node).as_ref().get_prev() {
@@ -453,9 +484,9 @@ feature! {
         /// empty.
         pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
             unsafe {
-                crate::soprintln!("guarded_pop_back {} {}",
-                    crate::AddrColor::new("guard", self.guard.as_ptr() as u64),
-                    crate::AddrColor::new("tail", L::pointers(self.guard).as_ref().get_prev().map(|n| n.as_ptr() as u64).unwrap_or(0)),
+                rubicon::soprintln!("guarded_pop_back {} {}",
+                    rubicon::Beacon::from_ptr("guard", self.guard.as_ptr()),
+                    rubicon::Beacon::from_ptr("tail", L::pointers(self.guard).as_ref().get_prev().map(|n| n.as_ptr()).unwrap_or_else(std::ptr::null_mut)),
                 );
                 let last = self.tail()?;
                 let before_last = L::pointers(last).as_ref().get_prev().unwrap();

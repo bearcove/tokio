@@ -526,14 +526,19 @@ impl Context {
 
             // Increment the tick
             core.tick();
-            crate::soprintln!("worker tick {}", core.tick);
+            rubicon::soprintln!("⌚️ worker tick {}", core.tick);
 
             // Run maintenance, if needed
             core = self.maintenance(core);
 
             // First, check work available to the current worker.
             if let Some(task) = core.next_task(&self.worker) {
+                rubicon::soprintln!(
+                    "🏃 running {}",
+                    rubicon::Beacon::from_ptr("task", task.0.header_ptr().as_ptr())
+                );
                 core = self.run_task(task, core)?;
+                rubicon::soprintln!("🔙 go back to look for more work");
                 continue;
             }
 
@@ -545,14 +550,18 @@ impl Context {
             if let Some(task) = core.steal_work(&self.worker) {
                 // Found work, switch back to processing
                 core.stats.start_processing_scheduled_tasks();
+                rubicon::soprintln!("🥷 stole work!");
                 core = self.run_task(task, core)?;
             } else {
                 // Wait for work
                 core = if !self.defer.is_empty() {
+                    rubicon::soprintln!("parking with timeout (because self.defer is not empty)");
                     self.park_timeout(core, Some(Duration::from_millis(0)))
                 } else {
+                    rubicon::soprintln!("parking without timeout (because self.defer is empty)");
                     self.park(core)
                 };
+                rubicon::soprintln!("returned from parking, to the worker loop");
                 core.stats.start_processing_scheduled_tasks();
             }
         }
@@ -646,6 +655,10 @@ impl Context {
                 // Run the LIFO task, then loop
                 *self.core.borrow_mut() = Some(core);
                 let task = self.worker.handle.shared.owned.assert_owner(task);
+                rubicon::soprintln!(
+                    "running lifo task {}",
+                    rubicon::Beacon::from_ptr("task", task.task.header_ptr().as_ptr())
+                );
                 task.run();
             }
         })
@@ -693,13 +706,16 @@ impl Context {
     /// Also, we rely on the workstealing algorithm to spread the tasks amongst workers
     /// after all the IOs get dispatched
     fn park(&self, mut core: Box<Core>) -> Box<Core> {
+        rubicon::soprintln!("👋 worker is parking");
         if let Some(f) = &self.worker.handle.shared.config.before_park {
+            rubicon::soprintln!("running before_park hook");
             f();
         }
 
         if core.transition_to_parked(&self.worker) {
             while !core.is_shutdown && !core.is_traced {
                 core.stats.about_to_park();
+                rubicon::soprintln!("park_timeout with None duration");
                 core = self.park_timeout(core, None);
 
                 // Run regularly scheduled maintenance
@@ -712,12 +728,16 @@ impl Context {
         }
 
         if let Some(f) = &self.worker.handle.shared.config.after_unpark {
+            rubicon::soprintln!("running after_unpark hook");
             f();
         }
+
+        rubicon::soprintln!("👋 worker has unparked");
         core
     }
 
     fn park_timeout(&self, mut core: Box<Core>, duration: Option<Duration>) -> Box<Core> {
+        rubicon::soprintln!("entering park_timeout");
         self.assert_lifo_enabled_is_correct(&core);
 
         // Take the parker out of core
@@ -728,8 +748,10 @@ impl Context {
 
         // Park thread
         if let Some(timeout) = duration {
+            rubicon::soprintln!("parking with timeout {timeout:?}");
             park.park_timeout(&self.worker.handle.driver, timeout);
         } else {
+            rubicon::soprintln!("parking without timeout");
             park.park(&self.worker.handle.driver);
         }
 
@@ -742,9 +764,11 @@ impl Context {
         core.park = Some(park);
 
         if core.should_notify_others() {
+            rubicon::soprintln!("Notifying other parked workers");
             self.worker.handle.notify_parked_local();
         }
 
+        rubicon::soprintln!("Exiting park_timeout");
         core
     }
 
@@ -778,7 +802,7 @@ impl Core {
             let maybe_task = self.next_local_task();
 
             if maybe_task.is_some() {
-                crate::soprintln!("worker {} got local task", worker.index);
+                rubicon::soprintln!("worker {} got local task", worker.index);
                 return maybe_task;
             }
 
@@ -811,7 +835,7 @@ impl Core {
             // safety: passing in the correct `inject::Synced`.
             let mut tasks = unsafe { worker.inject().pop_n(&mut synced.inject, n) };
 
-            crate::soprintln!(
+            rubicon::soprintln!(
                 "after sync, worker {} got {} tasks",
                 worker.index,
                 tasks.len()

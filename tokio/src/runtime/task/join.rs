@@ -256,11 +256,11 @@ impl<T> JoinHandle<T> {
     /// Set the waker that is notified when the task completes.
     pub(crate) fn set_join_waker(&mut self, waker: &Waker) {
         if self.raw.try_set_join_waker(waker) {
-            crate::soprintln!("👋 JoinHandle::set_join_waker — the task has already completed");
+            rubicon::soprintln!("👋 JoinHandle::set_join_waker — the task has already completed");
             // In this case the task has already completed. We wake the waker immediately.
             waker.wake_by_ref();
         } else {
-            crate::soprintln!("👋 JoinHandle::set_join_waker — successful");
+            rubicon::soprintln!("👋 JoinHandle::set_join_waker — successful");
         }
     }
 
@@ -327,7 +327,7 @@ impl<T> Future for JoinHandle<T> {
     type Output = super::Result<T>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        crate::soprintln!("👋 JoinHandle::poll");
+        rubicon::soprintln!("👋 JoinHandle::poll");
 
         ready!(crate::trace::trace_leaf(cx));
         let mut ret = Poll::Pending;
@@ -351,7 +351,11 @@ impl<T> Future for JoinHandle<T> {
                 .try_read_output(&mut ret as *mut _ as *mut (), cx.waker());
         }
 
-        crate::soprintln!("👋 JoinHandle::poll — is_ready? {}", ret.is_ready());
+        rubicon::soprintln!(
+            "👋 JoinHandle::poll — is_ready? {} (for task {})",
+            ret.is_ready(),
+            rubicon::Beacon::from_ptr("task", self.raw.header_ptr().as_ptr())
+        );
 
         if ret.is_ready() {
             coop.made_progress();

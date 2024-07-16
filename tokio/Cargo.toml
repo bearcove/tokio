@@ -41,8 +41,16 @@ full = [
     "time",
 ]
 
-import-globals = ["full", "rubicon/import-globals"]
-export-globals = ["full", "rubicon/export-globals"]
+import-globals = [
+    "full",
+    "rubicon/import-globals",
+    "parking_lot/import-globals",
+]
+export-globals = [
+    "full",
+    "rubicon/export-globals",
+    "parking_lot/export-globals",
+]
 fs = []
 io-util = ["bytes"]
 # stdin, stdout, stderr

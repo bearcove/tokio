@@ -426,7 +426,7 @@ impl Handle {
         F: crate::future::Future + Send + 'static,
         F::Output: Send + 'static,
     {
-        crate::soprintln!("current_thread::Handle::spawn");
+        rubicon::soprintln!("current_thread::Handle::spawn");
         let (handle, notified) = me.shared.owned.bind(future, me.clone(), id);
 
         if let Some(notified) = notified {
@@ -651,7 +651,7 @@ impl CoreGuard<'_> {
     #[track_caller]
     fn block_on<F: Future>(self, future: F) -> F::Output {
         let ret = self.enter(|mut core, context| {
-            crate::soprintln!("CoreGuard::block_on");
+            rubicon::soprintln!("CoreGuard::block_on");
             let waker = Handle::waker_ref(&context.handle);
             let mut cx = std::task::Context::from_waker(&waker);
 
@@ -680,7 +680,7 @@ impl CoreGuard<'_> {
                     }
 
                     core.tick();
-                    crate::soprintln!("🔄 core loop, tick {}", core.tick);
+                    rubicon::soprintln!("🔄 core loop, tick {}", core.tick);
                     core.tick();
 
                     let entry = core.next_task(handle);
@@ -688,7 +688,7 @@ impl CoreGuard<'_> {
                     let task = match entry {
                         Some(entry) => entry,
                         None => {
-                            // crate::soprintln!("🗑️  ran out of tasks to poll");
+                            // rubicon::soprintln!("🗑️  ran out of tasks to poll");
                             core.metrics.end_processing_scheduled_tasks();
 
                             core = if !context.defer.is_empty() {
@@ -700,7 +700,7 @@ impl CoreGuard<'_> {
                             core.metrics.start_processing_scheduled_tasks();
 
                             // Try polling the `block_on` future next
-                            // crate::soprintln!("🔙 continuing core loop (after park)");
+                            // rubicon::soprintln!("🔙 continuing core loop (after park)");
                             continue 'outer;
                         }
                     };
@@ -709,9 +709,9 @@ impl CoreGuard<'_> {
 
                     let (c, ()) = context.run_task(core, || {
                         let ptr = task.task.header_ptr();
-                        crate::soprintln!("🏃 running task {:p}", ptr);
+                        rubicon::soprintln!("🏃 running task {:p}", ptr);
                         task.run();
-                        crate::soprintln!("🏃 running task {:p} (done!)", ptr);
+                        rubicon::soprintln!("🏃 running task {:p} (done!)", ptr);
                     });
 
                     core = c;
@@ -721,12 +721,12 @@ impl CoreGuard<'_> {
 
                 // Yield to the driver, this drives the timer and pulls any
                 // pending I/O events.
-                crate::soprintln!("✋ core yielding to driver");
+                rubicon::soprintln!("✋ core yielding to driver");
                 core = context.park_yield(core, handle);
 
                 core.metrics.start_processing_scheduled_tasks();
 
-                crate::soprintln!("🔙 core loop continuing naturally");
+                rubicon::soprintln!("🔙 core loop continuing naturally");
             }
         });
 

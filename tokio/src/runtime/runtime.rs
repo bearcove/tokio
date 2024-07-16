@@ -240,7 +240,7 @@ impl Runtime {
         F: Future + Send + 'static,
         F::Output: Send + 'static,
     {
-        crate::soprintln!("Runtime::spawn");
+        rubicon::soprintln!("Runtime::spawn");
         self.handle.spawn(future)
     }
 
@@ -267,7 +267,7 @@ impl Runtime {
         F: FnOnce() -> R + Send + 'static,
         R: Send + 'static,
     {
-        crate::soprintln!("Runtime::spawn_blocking");
+        rubicon::soprintln!("Runtime::spawn_blocking");
         self.handle.spawn_blocking(func)
     }
 

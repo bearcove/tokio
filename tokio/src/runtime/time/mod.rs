@@ -190,13 +190,21 @@ impl Driver {
         assert!(!handle.is_shutdown());
 
         // Finds out the min expiration time to park.
+        rubicon::soprintln!("find min expiration time to park...");
         let expiration_time = (0..rt_handle.time().inner.get_shard_size())
             .filter_map(|id| {
+                rubicon::soprintln!("lock sharded wheel {}", id);
                 let lock = rt_handle.time().inner.lock_sharded_wheel(id);
-                lock.next_expiration_time()
+                let net = lock.next_expiration_time();
+                rubicon::soprintln!("lock sharded wheel {}.. unlock!", id);
+                net
             })
             .min();
 
+        rubicon::soprintln!(
+            "find min expiration time to park... done, storing next wake: {:?}",
+            expiration_time
+        );
         rt_handle
             .time()
             .inner
@@ -218,28 +226,28 @@ impl Driver {
                         duration = std::cmp::min(limit, duration);
                     }
 
-                    crate::soprintln!("😴 parking for {duration:?}");
+                    rubicon::soprintln!("😴 parking for {duration:?}");
                     self.park_thread_timeout(rt_handle, duration);
                 } else {
-                    crate::soprintln!("😴 parking for for zero seconds (negative duration)");
+                    rubicon::soprintln!("😴 parking for for zero seconds (negative duration)");
                     self.park.park_timeout(rt_handle, Duration::from_secs(0));
                 }
             }
             None => {
                 if let Some(duration) = limit {
-                    crate::soprintln!(
+                    rubicon::soprintln!(
                         "😴 parking for {duration:?} (limit, since no expiration_time)"
                     );
                     self.park_thread_timeout(rt_handle, duration);
                 } else {
-                    crate::soprintln!("😴 parking indefinitely (no expiration_time, no limit)");
+                    rubicon::soprintln!("😴 parking indefinitely (no expiration_time, no limit)");
                     self.park.park(rt_handle);
                 }
             }
         }
 
         // Process pending timers after waking up
-        crate::soprintln!("⏰ thread unparked!");
+        rubicon::soprintln!("⏰ thread unparked!");
         handle.process(rt_handle.clock());
     }
 
@@ -295,7 +303,7 @@ impl Handle {
     /// Runs timer related logic, and returns the next wakeup time
     pub(self) fn process(&self, clock: &Clock) {
         let now = self.time_source().now(clock);
-        crate::soprintln!("current tick: {}", now);
+        rubicon::soprintln!("current tick: {}", now);
 
         // For fairness, randomly select one to start.
         let shards = self.inner.get_shard_size();
@@ -315,8 +323,10 @@ impl Handle {
 
     // Returns the next wakeup time of this shard.
     pub(self) fn process_at_sharded_time(&self, id: u32, mut now: u64) -> Option<u64> {
-        crate::soprintln!("> [Shard #{id}] Processing");
+        rubicon::soprintln!("> [Shard #{id}] Processing");
         let mut waker_list = WakeList::new();
+
+        rubicon::soprintln!("[PAST] lock sharded wheel {}..", id);
         let mut lock = self.inner.lock_sharded_wheel(id);
 
         if now < lock.elapsed() {
@@ -352,19 +362,19 @@ impl Handle {
                 match unsafe { entry.mark_firing(deadline) } {
                     Ok(()) => {
                         // Entry was expired.
-                        crate::soprintln!("💣 a timer was marked as firing");
+                        rubicon::soprintln!("💣 a timer was marked as firing");
 
                         // SAFETY: We hold the driver lock, and just removed the entry from any linked lists.
                         if let Some(waker) = unsafe { entry.fire(Ok(())) } {
-                            crate::soprintln!(
+                            rubicon::soprintln!(
                                 "🔥 Pushing {}",
-                                crate::AddrColor::new("waker", waker.as_raw().data() as u64)
+                                rubicon::Beacon::from_ptr("waker", waker.as_raw().data()),
                             );
                             waker_list.push(waker);
 
                             if !waker_list.can_push() {
-                                crate::soprintln!(
-                                    "waker list is full, waking all {} wakers",
+                                rubicon::soprintln!(
+                                    "Waker list is full, waking all {} wakers",
                                     waker_list.len()
                                 );
 
@@ -389,13 +399,14 @@ impl Handle {
 
         let next_wake_up = lock.poll_at();
         drop(lock);
+        rubicon::soprintln!("[PAST] lock sharded wheel {}.. unlock!", id);
 
         if waker_list.len() > 0 {
-            crate::soprintln!("👋 waking {} wakers", waker_list.len());
+            rubicon::soprintln!("👋 waking {} wakers", waker_list.len());
         }
         waker_list.wake_all();
 
-        crate::soprintln!("< [Shard #{id}] Processing... done!");
+        rubicon::soprintln!("< [Shard #{id}] Processing... done!");
         next_wake_up
     }
 
@@ -433,27 +444,30 @@ impl Handle {
         new_tick: u64,
         entry: NonNull<TimerShared>,
     ) {
-        crate::soprintln!(
+        rubicon::soprintln!(
             "reregistering {}",
-            crate::AddrColor::new("TimerEntry", entry.as_ptr() as *const _ as u64)
+            rubicon::Beacon::from_ptr("TimerEntry", entry.as_ptr())
         );
         let waker = unsafe {
+            let shard_id = entry.as_ref().shard_id();
+            rubicon::soprintln!("[RERE] lock sharded wheel {}..", shard_id);
             let mut lock = self.inner.lock_sharded_wheel(entry.as_ref().shard_id());
 
             // We may have raced with a firing/deregistration, so check before
             // deregistering.
             if unsafe { entry.as_ref().might_be_registered() } {
+                rubicon::soprintln!("[RERE] may be registered");
                 lock.remove(entry);
             }
 
             // Now that we have exclusive control of this entry, mint a handle to reinsert it.
             let entry = entry.as_ref().handle();
 
-            if self.is_shutdown() {
+            let waker = if self.is_shutdown() {
                 unsafe { entry.fire(Err(crate::time::error::Error::shutdown())) }
             } else {
                 entry.set_expiration(new_tick);
-                crate::soprintln!("setting expiration to {}", new_tick);
+                rubicon::soprintln!("setting expiration to {}", new_tick);
 
                 // Note: We don't have to worry about racing with some other resetting
                 // thread, because add_entry and reregister require exclusive control of
@@ -467,18 +481,29 @@ impl Handle {
                             .map(|next_wake| when < next_wake.get())
                             .unwrap_or(true)
                         {
+                            rubicon::soprintln!("inserted into wheel, unparking");
                             unpark.unpark();
                         }
 
                         None
                     }
                     Err((entry, crate::time::error::InsertError::Elapsed)) => unsafe {
+                        rubicon::soprintln!("could not insert into wheel, firing");
                         entry.fire(Ok(()))
                     },
                 }
-            }
+            };
 
             // Must release lock before invoking waker to avoid the risk of deadlock.
+            rubicon::soprintln!("[RERE] lock sharded wheel {}.. releasing!", shard_id);
+            if let Some(waker) = waker.as_ref() {
+                rubicon::soprintln!(
+                    "[RERE] btw, waker is {}",
+                    rubicon::Beacon::from_ptr("waker", waker.as_raw().data())
+                );
+            }
+
+            waker
         };
 
         // The timer was fired synchronously as a result of the reregistration.
@@ -505,8 +530,11 @@ impl Inner {
         shard_id: u32,
     ) -> crate::loom::sync::MutexGuard<'_, Wheel> {
         let index = shard_id % (self.wheels.len() as u32);
+        rubicon::soprintln!("lock sharded wheel {} ({})...", index, shard_id);
         // Safety: This modulo operation ensures that the index is not out of bounds.
-        unsafe { self.wheels.get_unchecked(index as usize).lock() }
+        let guard = unsafe { self.wheels.get_unchecked(index as usize).lock() };
+        rubicon::soprintln!("lock sharded wheel {} ({})... got it!", index, shard_id);
+        guard
     }
 
     // Check whether the driver has been shutdown

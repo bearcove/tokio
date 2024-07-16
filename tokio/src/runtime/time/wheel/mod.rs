@@ -187,7 +187,7 @@ impl Wheel {
     /// Safety: This entry must not have expired.
     pub(super) unsafe fn reinsert_entry(&mut self, entry: TimerHandle, elapsed: u64, when: u64) {
         let level = level_for(elapsed, when);
-        crate::soprintln!("🔄 reinserting entry at level {level}");
+        rubicon::soprintln!("🔄 reinserting entry at level {level}");
         unsafe { self.levels[level].add_entry(entry) };
     }
 
@@ -280,7 +280,7 @@ impl Wheel {
         // they actually need to be dropped down a level. We then reinsert them
         // back into the same position; we must make sure we don't then process
         // those entries again or we'll end up in an infinite loop.
-        crate::soprintln!(
+        rubicon::soprintln!(
             "getting waiters list for level {} (slot {})",
             expiration.level,
             expiration.slot

@@ -120,7 +120,7 @@ impl Level {
 
     pub(crate) unsafe fn add_entry(&mut self, item: TimerHandle) {
         let slot = slot_for(item.true_when(), self.level);
-        crate::soprintln!(
+        rubicon::soprintln!(
             "  adding time wheel entry at level {} (slot {slot})",
             self.level
         );

@@ -226,7 +226,7 @@ unsafe impl<S> Sync for Task<S> {}
 
 /// A task was notified.
 #[repr(transparent)]
-pub(crate) struct Notified<S: 'static>(Task<S>);
+pub(crate) struct Notified<S: 'static>(pub(crate) Task<S>);
 
 // safety: This type cannot be used to touch the task without first verifying
 // that the value is on a thread where it is safe to poll the task.

@@ -34,7 +34,7 @@ cfg_has_atomic_u64! {
         loop {
             let id = NEXT_OWNED_TASKS_ID.fetch_add(1, Ordering::Relaxed);
             if let Some(id) = NonZeroU64::new(id) {
-                crate::soprintln!("➕ Generated owned 64b task id: {id}");
+                rubicon::soprintln!("➕ Generated owned 64b task id: {id}");
                 return id;
             }
         }
@@ -50,7 +50,7 @@ cfg_not_has_atomic_u64! {
         loop {
             let id = NEXT_OWNED_TASKS_ID.fetch_add(1, Ordering::Relaxed);
             if let Some(id) = NonZeroU64::new(u64::from(id)) {
-                crate::soprintln!("➕ Generated owned 32b task id: {id}");
+                rubicon::soprintln!("➕ Generated owned 32b task id: {id}");
                 return id;
             }
         }
@@ -79,7 +79,7 @@ struct OwnedTasksInner<S: 'static> {
 impl<S: 'static> OwnedTasks<S> {
     pub(crate) fn new(num_cores: usize) -> Self {
         let shard_size = Self::gen_shared_list_size(num_cores);
-        crate::soprintln!(
+        rubicon::soprintln!(
             "OwnedTasks::new num_cores={} shard_size={}",
             num_cores,
             shard_size
@@ -121,7 +121,12 @@ impl<S: 'static> OwnedTasks<S> {
         }
 
         let shard = self.list.lock_shard(&task);
-        crate::soprintln!("Pushing task to shard {}", shard.id);
+        rubicon::soprintln!(
+            "pushing {} to shard {}/{}",
+            rubicon::Beacon::from_ptr("task", task.header_ptr().as_ptr()),
+            shard.id & self.list.shard_mask(),
+            self.list.shard_size()
+        );
 
         // Check the closed flag in the lock for ensuring all that tasks
         // will shut down after the OwnedTasks has been closed.

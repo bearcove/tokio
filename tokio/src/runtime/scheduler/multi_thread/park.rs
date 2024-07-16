@@ -110,6 +110,7 @@ impl Inner {
             .compare_exchange(NOTIFIED, EMPTY, SeqCst, SeqCst)
             .is_ok()
         {
+            rubicon::soprintln!("👋 in park — we got a notification so let's NOT park actually");
             return;
         }
 
@@ -161,6 +162,8 @@ impl Inner {
     }
 
     fn park_driver(&self, driver: &mut Driver, handle: &driver::Handle) {
+        rubicon::soprintln!("🌲 park_driver");
+
         match self
             .state
             .compare_exchange(EMPTY, PARKED_DRIVER, SeqCst, SeqCst)

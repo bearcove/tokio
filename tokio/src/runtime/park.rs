@@ -89,6 +89,10 @@ impl Inner {
             .compare_exchange(NOTIFIED, EMPTY, SeqCst, SeqCst)
             .is_ok()
         {
+            rubicon::soprintln!(
+                "👋 {} CachedParkThread::park — already notified",
+                rubicon::Beacon::from_ref("self", self),
+            );
             return;
         }
 
@@ -113,7 +117,15 @@ impl Inner {
         }
 
         loop {
+            rubicon::soprintln!(
+                "👋 {} CachedParkThread::park — waiting for notification",
+                rubicon::Beacon::from_ref("self", self),
+            );
             m = self.condvar.wait(m).unwrap();
+            rubicon::soprintln!(
+                "👋 {} CachedParkThread::park — trying to CAS NOTIFIED to EMPTY",
+                rubicon::Beacon::from_ref("self", self),
+            );
 
             if self
                 .state
@@ -121,6 +133,10 @@ impl Inner {
                 .is_ok()
             {
                 // got a notification
+                rubicon::soprintln!(
+                    "👋 {} CachedParkThread::park — got notification",
+                    rubicon::Beacon::from_ref("self", self),
+                );
                 return;
             }
 
@@ -137,10 +153,18 @@ impl Inner {
             .compare_exchange(NOTIFIED, EMPTY, SeqCst, SeqCst)
             .is_ok()
         {
+            rubicon::soprintln!(
+                "👋 {} CachedParkThread::park_timeout — already notified",
+                rubicon::Beacon::from_ref("self", self),
+            );
             return;
         }
 
         if dur == Duration::from_millis(0) {
+            rubicon::soprintln!(
+                "👋 {} CachedParkThread::park_timeout — duration is zero",
+                rubicon::Beacon::from_ref("self", self),
+            );
             return;
         }
 
@@ -152,7 +176,6 @@ impl Inner {
                 // We must read again here, see `park`.
                 let old = self.state.swap(EMPTY, SeqCst);
                 debug_assert_eq!(old, NOTIFIED, "park state changed unexpectedly");
-
                 return;
             }
             Err(actual) => panic!("inconsistent park_timeout state; actual = {}", actual),
@@ -165,8 +188,13 @@ impl Inner {
         let (_m, _result) = self.condvar.wait_timeout(m, dur).unwrap();
 
         match self.state.swap(EMPTY, SeqCst) {
-            NOTIFIED => {} // got a notification, hurray!
-            PARKED => {}   // no notification, alas
+            NOTIFIED => {
+                rubicon::soprintln!(
+                    "👋 {} CachedParkThread::park_timeout — got notification",
+                    rubicon::Beacon::from_ref("self", self),
+                );
+            } // got a notification, hurray!
+            PARKED => {} // no notification, alas
             n => panic!("inconsistent park_timeout state: {}", n),
         }
     }
@@ -278,10 +306,22 @@ impl CachedParkThread {
         pin!(f);
 
         loop {
+            rubicon::soprintln!(
+                "👋 {} CachedParkThread::block_on",
+                rubicon::Beacon::from_ref("self", self),
+            );
             if let Ready(v) = crate::runtime::coop::budget(|| f.as_mut().poll(&mut cx)) {
+                rubicon::soprintln!(
+                    "👋 {} CachedParkThread ready!!",
+                    rubicon::Beacon::from_ref("self", self),
+                );
                 return Ok(v);
             }
 
+            rubicon::soprintln!(
+                "👋 {} CachedParkThread parking (block_on, task returned, wasn't ready)...",
+                rubicon::Beacon::from_ref("self", self),
+            );
             self.park();
         }
     }
