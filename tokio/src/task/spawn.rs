@@ -166,6 +166,7 @@ cfg_rt! {
         F: Future + Send + 'static,
         F::Output: Send + 'static,
     {
+        crate::soprintln!("spawn {:p}", &future);
         // preventing stack overflows on debug mode, by quickly sending the
         // task to the heap.
         if cfg!(debug_assertions) && std::mem::size_of::<F>() > 2048 {

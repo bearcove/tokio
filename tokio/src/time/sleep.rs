@@ -253,6 +253,8 @@ impl Sleep {
         deadline: Instant,
         location: Option<&'static Location<'static>>,
     ) -> Sleep {
+        crate::soprintln!("Sleep::new_timeout, deadline = {:?}", deadline);
+
         use crate::runtime::scheduler;
         let handle = scheduler::Handle::current();
         let entry = TimerEntry::new(handle, deadline);

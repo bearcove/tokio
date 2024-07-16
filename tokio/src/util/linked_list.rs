@@ -401,7 +401,6 @@ feature! {
         /// Removes the last element from a list and returns it, or None if it is
         /// empty.
         pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
-            crate::soprintln!("EntryWaitersList::pop_back");
             unsafe {
                 let last = self.tail()?;
                 let before_last = L::pointers(last).as_ref().get_prev().unwrap();
