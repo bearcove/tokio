@@ -702,44 +702,28 @@ macro_rules! soprintln {
     ($($arg:tt)*) => {
         {
             let id = $crate::shared_object_id();
-            let r = ((id >> 43) & 0x1FFFFF) as u32 * 255 / 0x1FFFFF;
-            let g = ((id >> 22) & 0x1FFFFF) as u32 * 255 / 0x1FFFFF;
-            let b = (id & 0x3FFFFF) as u32 * 255 / 0x3FFFFF;
-            let (r, g, b) = (r as u8, g as u8, b as u8);
 
-            // Helper function to convert RGB to HSL
-            fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
-                let r = r as f32 / 255.0;
-                let g = g as f32 / 255.0;
-                let b = b as f32 / 255.0;
-
-                let max = r.max(g).max(b);
-                let min = r.min(g).min(b);
-
-                let mut h = 0.0;
-                let mut s = 0.0;
-                let l = (max + min) / 2.0;
-
-                if max != min {
-                    let d = max - min;
-                    s = if l > 0.5 {
-                        d / (2.0 - max - min)
-                    } else {
-                        d / (max + min)
-                    };
-                    h = match max {
-                        m if m == r => (g - b) / d + (if g < b { 6.0 } else { 0.0 }),
-                        m if m == g => (b - r) / d + 2.0,
-                        _ => (r - g) / d + 4.0,
-                    };
-                    h /= 6.0;
-                }
-
-                (h * 360.0, s * 100.0, l * 100.0)
+            // Better hash function (FxHash)
+            fn hash(mut x: u64) -> u64 {
+                const K: u64 = 0x517cc1b727220a95;
+                x = x.wrapping_mul(K);
+                x ^= x >> 32;
+                x = x.wrapping_mul(K);
+                x ^= x >> 32;
+                x = x.wrapping_mul(K);
+                x
             }
 
+            // Convert hash to a float between 0 and 1
+            let hashed_float = (hash(id) as f64) / (u64::MAX as f64);
+
+            // Use hashed float as hue (0-360)
+            let h = hashed_float * 360.0;
+            let s = 50.0; // Average saturation
+            let l = 70.0; // Brightness 0.7 out of 1
+
             // Helper function to convert HSL to RGB
-            fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
+            fn hsl_to_rgb(h: f64, s: f64, l: f64) -> (u8, u8, u8) {
                 let h = h / 360.0;
                 let s = s / 100.0;
                 let l = l / 100.0;
@@ -763,13 +747,6 @@ macro_rules! soprintln {
                     ((b + m) * 255.0) as u8,
                 )
             }
-
-            // Ensure brightness by using the HSL color model
-            // Convert RGB to HSL, adjust lightness, then back to RGB
-            let (h, s, mut l) = rgb_to_hsl(r, g, b);
-
-            // Increase lightness to ensure brightness, but keep some variation
-            l = (l + 50.0).min(100.0);
 
             let (r, g, b) = hsl_to_rgb(h, s, l);
 
