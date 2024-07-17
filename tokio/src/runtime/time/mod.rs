@@ -366,6 +366,7 @@ impl Handle {
 
                         // SAFETY: We hold the driver lock, and just removed the entry from any linked lists.
                         if let Some(waker) = unsafe { entry.fire(Ok(())) } {
+                            #[cfg(feature = "nightly")]
                             rubicon::soprintln!(
                                 "🔥 Pushing {}",
                                 rubicon::Beacon::from_ptr("waker", waker.as_raw().data()),
@@ -496,6 +497,7 @@ impl Handle {
 
             // Must release lock before invoking waker to avoid the risk of deadlock.
             rubicon::soprintln!("[RERE] lock sharded wheel {}.. releasing!", shard_id);
+            #[cfg(feature = "nightly")]
             if let Some(waker) = waker.as_ref() {
                 rubicon::soprintln!(
                     "[RERE] btw, waker is {}",

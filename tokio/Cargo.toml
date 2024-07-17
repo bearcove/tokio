@@ -24,6 +24,7 @@ keywords = ["io", "async", "non-blocking", "futures"]
 [features]
 # Include nothing by default
 default = []
+nightly = []
 
 # enable everything
 full = [

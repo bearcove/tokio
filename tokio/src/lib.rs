@@ -1,4 +1,4 @@
-#![feature(waker_getters)]
+#![cfg_attr(feature = "nightly", feature(waker_getters))]
 #![allow(unknown_lints, unexpected_cfgs)]
 #![allow(
     clippy::cognitive_complexity,

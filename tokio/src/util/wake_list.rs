@@ -67,11 +67,12 @@ impl WakeList {
             let waker = unsafe { ptr::read(guard.start) };
             // SAFETY: The resulting pointer is in bounds or one after the length of the same object.
             guard.start = unsafe { guard.start.add(1) };
-            // If this panics, then `guard` will clean up the remaining wakers.
+            #[cfg(feature = "nightly")]
             rubicon::soprintln!(
                 "🔥 waking {}",
                 rubicon::Beacon::from_ptr("waker", waker.as_raw().data())
             );
+            // If this panics, then `guard` will clean up the remaining wakers.
             waker.wake();
         }
     }
