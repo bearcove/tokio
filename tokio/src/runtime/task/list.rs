@@ -28,7 +28,9 @@ use std::num::NonZeroU64;
 cfg_has_atomic_u64! {
     use std::sync::atomic::AtomicU64;
 
-    static NEXT_OWNED_TASKS_ID: AtomicU64 = AtomicU64::new(1);
+    rubicon::process_local! {
+        static NEXT_OWNED_TASKS_ID: AtomicU64 = AtomicU64::new(1);
+    }
 
     fn get_next_id() -> NonZeroU64 {
         loop {
@@ -43,7 +45,9 @@ cfg_has_atomic_u64! {
 cfg_not_has_atomic_u64! {
     use std::sync::atomic::AtomicU32;
 
-    static NEXT_OWNED_TASKS_ID: AtomicU32 = AtomicU32::new(1);
+    rubicon::process_local! {
+        static NEXT_OWNED_TASKS_ID: AtomicU32 = AtomicU32::new(1);
+    }
 
     fn get_next_id() -> NonZeroU64 {
         loop {

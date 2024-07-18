@@ -547,6 +547,8 @@ cfg_time! {
     pub mod time;
 }
 
+pub use rubicon;
+
 mod trace {
     use std::future::Future;
     use std::pin::Pin;
