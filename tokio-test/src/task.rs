@@ -248,10 +248,12 @@ impl ThreadWaker {
     }
 }
 
-static VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake_by_ref, drop_waker);
+rubicon::process_local! {
+    static TOKIO_TEST_TASK_VTABLE: RawWakerVTable = RawWakerVTable::new(clone, wake, wake_by_ref, drop_waker);
+}
 
 unsafe fn to_raw(waker: Arc<ThreadWaker>) -> RawWaker {
-    RawWaker::new(Arc::into_raw(waker) as *const (), &VTABLE)
+    RawWaker::new(Arc::into_raw(waker) as *const (), &TOKIO_TEST_TASK_VTABLE)
 }
 
 unsafe fn from_raw(raw: *const ()) -> Arc<ThreadWaker> {

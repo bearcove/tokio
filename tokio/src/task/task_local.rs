@@ -53,6 +53,8 @@ macro_rules! __task_local_inner {
     ($(#[$attr:meta])* $vis:vis $name:ident, $t:ty) => {
         $(#[$attr])*
         $vis static $name: $crate::task::LocalKey<$t> = {
+            // FIXME: this cannot be rubicon'd right now: because mangling is disabled, we'd be
+            // exporting __KEY several times.
             std::thread_local! {
                 static __KEY: std::cell::RefCell<Option<$t>> = const { std::cell::RefCell::new(None) };
             }
