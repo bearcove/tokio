@@ -79,14 +79,16 @@ impl Id {
 
         #[cfg(all(test, loom))]
         crate::loom::lazy_static! {
-            static ref NEXT_ID: StaticAtomicU64 = StaticAtomicU64::new(1);
+            static ref TOKIO_TASK_NEXT_ID: StaticAtomicU64 = StaticAtomicU64::new(1);
         }
 
         #[cfg(not(all(test, loom)))]
-        static NEXT_ID: StaticAtomicU64 = StaticAtomicU64::new(1);
+        rubicon::process_local! {
+            static TOKIO_TASK_NEXT_ID: StaticAtomicU64 = StaticAtomicU64::new(1);
+        }
 
         loop {
-            let id = NEXT_ID.fetch_add(1, Relaxed);
+            let id = TOKIO_TASK_NEXT_ID.fetch_add(1, Relaxed);
             if let Some(id) = NonZeroU64::new(id) {
                 return Self(id);
             }

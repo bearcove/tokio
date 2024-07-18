@@ -30,9 +30,11 @@ struct Pidfd {
 impl Pidfd {
     fn open(pid: u32) -> Option<Pidfd> {
         // Store false (0) to reduce executable size
-        static NO_PIDFD_SUPPORT: AtomicBool = AtomicBool::new(false);
+        rubicon::process_local! {
+            static TOKIO_PROCESS_NO_PIDFD_SUPPORT: AtomicBool = AtomicBool::new(false);
+        }
 
-        if NO_PIDFD_SUPPORT.load(Relaxed) {
+        if TOKIO_PROCESS_NO_PIDFD_SUPPORT.load(Relaxed) {
             return None;
         }
 
@@ -43,7 +45,7 @@ impl Pidfd {
             let errno = io::Error::last_os_error().raw_os_error().unwrap();
 
             if errno == ENOSYS {
-                NO_PIDFD_SUPPORT.store(true, Relaxed)
+                TOKIO_PROCESS_NO_PIDFD_SUPPORT.store(true, Relaxed)
             }
 
             None
