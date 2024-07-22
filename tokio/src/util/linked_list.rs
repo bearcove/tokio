@@ -361,6 +361,15 @@ feature! {
 
             unsafe {
                 if let Some(head) = self.head {
+                    soprintln::soprintln!("into_guarded, not empty {} {}", soprintln::Beacon::from_ptr("guard", guard.as_ptr()), soprintln::Beacon::from_ptr("head", head.as_ptr()));
+
+                    if L::pointers(head).as_ref().get_prev().is_some() {
+                        soprintln::soprintln!("debug assert is about to fail: head is {}, head prev is {}",
+                            soprintln::Beacon::from_ptr("head", head.as_ptr()),
+                            soprintln::Beacon::from_ptr("head prev", L::pointers(head).as_ref().get_prev().unwrap().as_ptr())
+                        );
+                    }
+
                     debug_assert!(L::pointers(head).as_ref().get_prev().is_none());
                     L::pointers(head).as_mut().set_prev(Some(guard));
                     L::pointers(guard).as_mut().set_next(Some(head));
@@ -371,6 +380,8 @@ feature! {
                     L::pointers(tail).as_mut().set_next(Some(guard));
                     L::pointers(guard).as_mut().set_prev(Some(tail));
                 } else {
+                    soprintln::soprintln!("into_guarded, empty {}", soprintln::Beacon::from_ptr("guard", guard.as_ptr()));
+
                     // The list is empty.
                     L::pointers(guard).as_mut().set_prev(Some(guard));
                     L::pointers(guard).as_mut().set_next(Some(guard));
@@ -400,6 +411,23 @@ feature! {
         /// Removes the last element from a list and returns it, or None if it is
         /// empty.
         pub(crate) fn pop_back(&mut self) -> Option<L::Handle> {
+            unsafe {
+                let head = L::pointers(self.guard).as_ref().get_next().unwrap();
+                let tail = L::pointers(self.guard).as_ref().get_prev().unwrap();
+
+                soprintln::soprintln!("pop_back: {} | {} {} {} | {} {} {}",
+                    soprintln::Beacon::from_ptr("guard", self.guard.as_ptr()),
+
+                    soprintln::Beacon::from_ptr("prev", L::pointers(head).as_ref().get_prev().map_or(std::ptr::null(), |p| p.as_ptr())),
+                    soprintln::Beacon::from_ptr("head", head.as_ptr()),
+                    soprintln::Beacon::from_ptr("next", L::pointers(head).as_ref().get_next().map_or(std::ptr::null(), |p| p.as_ptr())),
+
+                    soprintln::Beacon::from_ptr("prev", L::pointers(tail).as_ref().get_prev().map_or(std::ptr::null(), |p| p.as_ptr())),
+                    soprintln::Beacon::from_ptr("tail", tail.as_ptr()),
+                    soprintln::Beacon::from_ptr("next", L::pointers(tail).as_ref().get_next().map_or(std::ptr::null(), |p| p.as_ptr()))
+                );
+            }
+
             unsafe {
                 let last = self.tail()?;
                 let before_last = L::pointers(last).as_ref().get_prev().unwrap();
