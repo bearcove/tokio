@@ -703,8 +703,9 @@ rubicon::compatibility_check! {
     #[cfg(feature = "io-std")]
     ("io-std", "enabled"),
 
-    #[cfg(feature = "macros")]
-    ("macros", "enabled"),
+    // that one just defines macros — definitely no struct layout changes
+    // #[cfg(feature = "macros")]
+    // ("macros", "enabled"),
 
     #[cfg(feature = "net")]
     ("net", "enabled"),
