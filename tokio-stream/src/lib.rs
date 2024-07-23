@@ -119,3 +119,7 @@ pub use stream_close::StreamNotifyClose;
 
 #[doc(no_inline)]
 pub use futures_core::Stream;
+
+rubicon::compatibility_check! {
+    ("version", env!("CARGO_PKG_VERSION")),
+}

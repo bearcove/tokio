@@ -28,7 +28,7 @@ async-stream = "0.3.3"
 
 bytes = "1.0.0"
 futures-core = "0.3.0"
-rubicon = "3.2.0"
+rubicon = "3.3.0"
 
 [dev-dependencies]
 tokio = { version = "1.2.0", path = "../tokio", features = ["full"] }

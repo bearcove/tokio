@@ -35,3 +35,7 @@ pub fn block_on<F: std::future::Future>(future: F) -> F::Output {
 
     rt.block_on(future)
 }
+
+rubicon::compatibility_check! {
+    ("version", env!("CARGO_PKG_VERSION")),
+}
