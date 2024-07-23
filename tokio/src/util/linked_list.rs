@@ -387,6 +387,18 @@ feature! {
                     debug_assert!(L::pointers(tail).as_ref().get_next().is_none());
                     L::pointers(tail).as_mut().set_next(Some(guard));
                     L::pointers(guard).as_mut().set_prev(Some(tail));
+
+                    soprintln::soprintln!("after into_guarded: {} | {} {} {} | {} {} {}",
+                        soprintln::Beacon::from_ptr("guard", guard.as_ptr()),
+
+                        soprintln::Beacon::from_ptr("prev", L::pointers(head).as_ref().get_prev().map_or(std::ptr::null(), |p| p.as_ptr())),
+                        soprintln::Beacon::from_ptr("head", head.as_ptr()),
+                        soprintln::Beacon::from_ptr("next", L::pointers(head).as_ref().get_next().map_or(std::ptr::null(), |p| p.as_ptr())),
+
+                        soprintln::Beacon::from_ptr("prev", L::pointers(tail).as_ref().get_prev().map_or(std::ptr::null(), |p| p.as_ptr())),
+                        soprintln::Beacon::from_ptr("tail", tail.as_ptr()),
+                        soprintln::Beacon::from_ptr("next", L::pointers(tail).as_ref().get_next().map_or(std::ptr::null(), |p| p.as_ptr()))
+                    );
                 } else {
                     soprintln::soprintln!("into_guarded, empty {}", soprintln::Beacon::from_ptr("guard", guard.as_ptr()));
 
