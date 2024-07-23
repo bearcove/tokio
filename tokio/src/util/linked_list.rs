@@ -376,6 +376,14 @@ feature! {
 
                     // The list is not empty, so the tail cannot be `None`.
                     let tail = self.tail.unwrap();
+
+                    if L::pointers(tail).as_ref().get_next().is_some() {
+                        soprintln::soprintln!("debug assert is about to fail: tail is {}, tail next is {}",
+                            soprintln::Beacon::from_ptr("tail", tail.as_ptr()),
+                            soprintln::Beacon::from_ptr("tail next", L::pointers(tail).as_ref().get_next().unwrap().as_ptr())
+                        );
+                    }
+
                     debug_assert!(L::pointers(tail).as_ref().get_next().is_none());
                     L::pointers(tail).as_mut().set_next(Some(guard));
                     L::pointers(guard).as_mut().set_prev(Some(tail));
