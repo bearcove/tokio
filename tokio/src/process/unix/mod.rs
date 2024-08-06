@@ -68,17 +68,21 @@ cfg_not_has_const_mutex_new! {
     fn get_orphan_queue() -> &'static OrphanQueueImpl<StdChild> {
         use std::sync::OnceLock;
 
-        static ORPHAN_QUEUE: OnceLock<OrphanQueueImpl<StdChild>> = OnceLock::new();
+        rubicon::process_local! {
+            static TOKIO_PROCESS_UNIX_ORPHAN_QUEUE: OnceLock<OrphanQueueImpl<StdChild>> = OnceLock::new();
+        }
 
-        ORPHAN_QUEUE.get_or_init(OrphanQueueImpl::new)
+        TOKIO_PROCESS_UNIX_ORPHAN_QUEUE.get_or_init(OrphanQueueImpl::new)
     }
 }
 
 cfg_has_const_mutex_new! {
     fn get_orphan_queue() -> &'static OrphanQueueImpl<StdChild> {
-        static ORPHAN_QUEUE: OrphanQueueImpl<StdChild> = OrphanQueueImpl::new();
+        rubicon::process_local! {
+            static TOKIO_PROCESS_UNIX_ORPHAN_QUEUE: OrphanQueueImpl<StdChild> = OrphanQueueImpl::new();
+        }
 
-        &ORPHAN_QUEUE
+        &TOKIO_PROCESS_UNIX_ORPHAN_QUEUE
     }
 }
 

@@ -164,9 +164,11 @@ where
     OsExtraData: 'static + Send + Sync + Init,
     OsStorage: 'static + Send + Sync + Init,
 {
-    static GLOBALS: OnceLock<Globals> = OnceLock::new();
+    rubicon::process_local! {
+        static TOKIO_SIGNAL_REGISTRY_GLOBALS: OnceLock<Globals> = OnceLock::new();
+    }
 
-    GLOBALS.get_or_init(globals_init)
+    TOKIO_SIGNAL_REGISTRY_GLOBALS.get_or_init(globals_init)
 }
 
 #[cfg(all(test, not(loom)))]

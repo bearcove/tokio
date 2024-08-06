@@ -696,3 +696,37 @@ fn is_unpin<T: Unpin>() {}
 /// fuzz test (`fuzz_linked_list`)
 #[cfg(fuzzing)]
 pub mod fuzz;
+
+rubicon::compatibility_check! {
+    ("version", env!("CARGO_PKG_VERSION")),
+
+    #[cfg(feature = "fs")]
+    ("fs", "enabled"),
+
+    #[cfg(feature = "io-util")]
+    ("io-util", "enabled"),
+
+    #[cfg(feature = "io-std")]
+    ("io-std", "enabled"),
+
+    #[cfg(feature = "net")]
+    ("net", "enabled"),
+
+    #[cfg(feature = "process")]
+    ("process", "enabled"),
+
+    #[cfg(feature = "rt")]
+    ("rt", "enabled"),
+
+    #[cfg(feature = "rt-multi-thread")]
+    ("rt-multi-thread", "enabled"),
+
+    #[cfg(feature = "signal")]
+    ("signal", "enabled"),
+
+    #[cfg(feature = "sync")]
+    ("sync", "enabled"),
+
+    #[cfg(feature = "time")]
+    ("time", "enabled"),
+}
