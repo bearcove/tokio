@@ -28,11 +28,13 @@ use std::num::NonZeroU64;
 cfg_has_atomic_u64! {
     use std::sync::atomic::AtomicU64;
 
-    static NEXT_OWNED_TASKS_ID: AtomicU64 = AtomicU64::new(1);
+    rubicon::process_local! {
+        static TOKIO_NEXT_OWNED_TASKS_ID: AtomicU64 = AtomicU64::new(1);
+    }
 
     fn get_next_id() -> NonZeroU64 {
         loop {
-            let id = NEXT_OWNED_TASKS_ID.fetch_add(1, Ordering::Relaxed);
+            let id = TOKIO_NEXT_OWNED_TASKS_ID.fetch_add(1, Ordering::Relaxed);
             if let Some(id) = NonZeroU64::new(id) {
                 return id;
             }
@@ -43,11 +45,13 @@ cfg_has_atomic_u64! {
 cfg_not_has_atomic_u64! {
     use std::sync::atomic::AtomicU32;
 
-    static NEXT_OWNED_TASKS_ID: AtomicU32 = AtomicU32::new(1);
+    rubicon::process_local! {
+        static TOKIO_NEXT_OWNED_TASKS_ID: AtomicU32 = AtomicU32::new(1);
+    }
 
     fn get_next_id() -> NonZeroU64 {
         loop {
-            let id = NEXT_OWNED_TASKS_ID.fetch_add(1, Ordering::Relaxed);
+            let id = TOKIO_NEXT_OWNED_TASKS_ID.fetch_add(1, Ordering::Relaxed);
             if let Some(id) = NonZeroU64::new(u64::from(id)) {
                 return id;
             }
