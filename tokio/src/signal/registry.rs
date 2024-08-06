@@ -164,9 +164,11 @@ where
     OsExtraData: 'static + Send + Sync + Init,
     OsStorage: 'static + Send + Sync + Init,
 {
-    static GLOBALS: OnceCell<Globals> = OnceCell::new();
+    rubicon::process_local! {
+        static TOKIO_SIGNAL_REGISTRY_GLOBALS: OnceCell<Globals> = OnceCell::new();
+    }
 
-    GLOBALS.get(globals_init)
+    TOKIO_SIGNAL_REGISTRY_GLOBALS.get(globals_init)
 }
 
 #[cfg(all(test, not(loom)))]
