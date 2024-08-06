@@ -74,7 +74,9 @@ cfg_test_util! {
     // A static is used so we can avoid accessing the thread-local as well. The
     // `std` AtomicBool is used directly because loom does not support static
     // atomics.
-    static DID_PAUSE_CLOCK: StdAtomicBool = StdAtomicBool::new(false);
+    rubicon::process_local! {
+        static TOKIO_TIME_DID_PAUSE_CLOCK: StdAtomicBool = StdAtomicBool::new(false);
+    }
 
     #[derive(Debug)]
     struct Inner {
@@ -210,7 +212,7 @@ cfg_test_util! {
 
     /// Returns the current instant, factoring in frozen time.
     pub(crate) fn now() -> Instant {
-        if !DID_PAUSE_CLOCK.load(Ordering::Acquire) {
+        if !TOKIO_TIME_DID_PAUSE_CLOCK.load(Ordering::Acquire) {
             return Instant::from_std(std::time::Instant::now());
         }
 
@@ -257,7 +259,7 @@ cfg_test_util! {
             }
 
             // Track that we paused the clock
-            DID_PAUSE_CLOCK.store(true, Ordering::Release);
+            TOKIO_TIME_DID_PAUSE_CLOCK.store(true, Ordering::Release);
 
             let elapsed = match inner.unfrozen.as_ref() {
                 Some(v) => v.elapsed(),

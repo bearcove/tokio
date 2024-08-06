@@ -93,10 +93,12 @@ unsafe fn wake_by_ref(ptr: *const ()) {
     raw.wake_by_ref();
 }
 
-static WAKER_VTABLE: RawWakerVTable =
-    RawWakerVTable::new(clone_waker, wake_by_val, wake_by_ref, drop_waker);
+rubicon::process_local! {
+    static TOKIO_RUNTIME_TASK_WAKER_VTABLE: RawWakerVTable =
+        RawWakerVTable::new(clone_waker, wake_by_val, wake_by_ref, drop_waker);
+}
 
 fn raw_waker(header: NonNull<Header>) -> RawWaker {
     let ptr = header.as_ptr() as *const ();
-    RawWaker::new(ptr, &WAKER_VTABLE)
+    RawWaker::new(ptr, &TOKIO_RUNTIME_TASK_WAKER_VTABLE)
 }
