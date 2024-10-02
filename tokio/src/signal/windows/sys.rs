@@ -88,11 +88,13 @@ impl Init for OsExtraData {
 }
 
 fn global_init() -> io::Result<()> {
-    static INIT: Once = Once::new();
+    rubicon::process_local! {
+        static TOKIO_SIGNAL_WINDOWS_INIT: Once = Once::new();
+    }
 
     let mut init = None;
 
-    INIT.call_once(|| unsafe {
+    TOKIO_SIGNAL_WINDOWS_INIT.call_once(|| unsafe {
         let rc = console::SetConsoleCtrlHandler(Some(handler), 1);
         let ret = if rc == 0 {
             Err(io::Error::last_os_error())
