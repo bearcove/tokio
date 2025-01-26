@@ -68,17 +68,21 @@ cfg_not_has_const_mutex_new! {
     fn get_orphan_queue() -> &'static OrphanQueueImpl<StdChild> {
         use crate::util::once_cell::OnceCell;
 
-        static ORPHAN_QUEUE: OnceCell<OrphanQueueImpl<StdChild>> = OnceCell::new();
+        rubicon::process_local! {
+            static TOKIO_PROCESS_UNIX_ORPHAN_QUEUE: OnceCell<OrphanQueueImpl<StdChild>> = OnceCell::new();
+        }
 
-        ORPHAN_QUEUE.get(OrphanQueueImpl::new)
+        TOKIO_PROCESS_UNIX_ORPHAN_QUEUE.get(OrphanQueueImpl::new)
     }
 }
 
 cfg_has_const_mutex_new! {
     fn get_orphan_queue() -> &'static OrphanQueueImpl<StdChild> {
-        static ORPHAN_QUEUE: OrphanQueueImpl<StdChild> = OrphanQueueImpl::new();
+        rubicon::process_local! {
+            static TOKIO_PROCESS_UNIX_ORPHAN_QUEUE: OrphanQueueImpl<StdChild> = OrphanQueueImpl::new();
+        }
 
-        &ORPHAN_QUEUE
+        &TOKIO_PROCESS_UNIX_ORPHAN_QUEUE
     }
 }
 
